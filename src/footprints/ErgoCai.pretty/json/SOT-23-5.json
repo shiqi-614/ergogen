@@ -1,0 +1,260 @@
+{
+  "footprint": {
+    "name": "SOT-23-5",
+    "version": "20211014",
+    "generator": "pcbnew",
+    "layer": "F.Cu",
+    "tedit": "62126B28",
+    "attr": "smd",
+    "fp_text": {
+      "at": {
+        "x": 0,
+        "y": 2.54
+      },
+      "layer": "F.Fab",
+      "effects": {
+        "font": {
+          "size": [
+            1,
+            1
+          ],
+          "thickness": 0.15
+        }
+      },
+      "tstamp": "2f825cf4-7eb6-4ed1-84cd-8242b8b157c1"
+    },
+    "fp_line": [
+      {
+        "start": {
+          "x": -1.5,
+          "y": -1.45
+        },
+        "end": {
+          "x": -0.625,
+          "y": -1.45
+        },
+        "layer": "F.SilkS",
+        "width": 0.12,
+        "tstamp": "36db8495-894b-4d63-9797-01a308962eeb"
+      },
+      {
+        "start": {
+          "x": -1.8,
+          "y": -0.675
+        },
+        "end": {
+          "x": -1.8,
+          "y": -1.15
+        },
+        "layer": "F.SilkS",
+        "width": 0.12,
+        "tstamp": "af44d05a-92ca-45d2-851b-0ca08ba2536c"
+      },
+      {
+        "start": {
+          "x": 0.9,
+          "y": 1.55
+        },
+        "end": {
+          "x": -0.9,
+          "y": 1.55
+        },
+        "layer": "F.Fab",
+        "width": 0.1,
+        "tstamp": "22ed467f-d7e0-4479-be4f-f2af128a8154"
+      },
+      {
+        "start": {
+          "x": 0.9,
+          "y": -1.55
+        },
+        "end": {
+          "x": 0.9,
+          "y": 1.55
+        },
+        "layer": "F.Fab",
+        "width": 0.1,
+        "tstamp": "370858bd-d47c-42ca-99bc-5a3494410984"
+      },
+      {
+        "start": {
+          "x": -0.9,
+          "y": -0.9
+        },
+        "end": {
+          "x": -0.25,
+          "y": -1.55
+        },
+        "layer": "F.Fab",
+        "width": 0.1,
+        "tstamp": "3afe1023-8dc7-492f-9b64-7e62f4ed0c4d"
+      },
+      {
+        "start": {
+          "x": 0.9,
+          "y": -1.55
+        },
+        "end": {
+          "x": -0.25,
+          "y": -1.55
+        },
+        "layer": "F.Fab",
+        "width": 0.1,
+        "tstamp": "5a77183d-ffd5-406b-b593-83c2f8974d55"
+      },
+      {
+        "start": {
+          "x": -0.9,
+          "y": -0.9
+        },
+        "end": {
+          "x": -0.9,
+          "y": 1.55
+        },
+        "layer": "F.Fab",
+        "width": 0.1,
+        "tstamp": "b326cf0b-ccd6-41e2-8ec6-0ee6b4d46bcd"
+      }
+    ],
+    "fp_arc": {
+      "start": {
+        "x": -1.8,
+        "y": -1.15
+      },
+      "mid": "-1.712132 -1.362132",
+      "end": {
+        "x": -1.5,
+        "y": -1.45
+      },
+      "layer": "F.SilkS",
+      "width": 0.12,
+      "tstamp": "7e61d434-98b8-4833-bf7e-92bb088656c0"
+    },
+    "pad": [
+      {
+        "id": "1",
+        "type": "smd",
+        "shape": "roundrect",
+        "at": {
+          "x": -1.1,
+          "y": -0.95
+        },
+        "size": [
+          1.06,
+          0.65
+        ],
+        "layers": [
+          "F.Cu",
+          "F.Paste",
+          "F.Mask"
+        ],
+        "roundrect_rratio": 0.25,
+        "tstamp": "5093207f-0d6f-4a82-abd4-81918b830df2"
+      },
+      {
+        "id": "2",
+        "type": "smd",
+        "shape": "roundrect",
+        "at": {
+          "x": -1.1,
+          "y": 0
+        },
+        "size": [
+          1.06,
+          0.65
+        ],
+        "layers": [
+          "F.Cu",
+          "F.Paste",
+          "F.Mask"
+        ],
+        "roundrect_rratio": 0.25,
+        "tstamp": "ed2e04a1-efc4-40a2-b4c6-8ac90c1fa81d"
+      },
+      {
+        "id": "3",
+        "type": "smd",
+        "shape": "roundrect",
+        "at": {
+          "x": -1.1,
+          "y": 0.95
+        },
+        "size": [
+          1.06,
+          0.65
+        ],
+        "layers": [
+          "F.Cu",
+          "F.Paste",
+          "F.Mask"
+        ],
+        "roundrect_rratio": 0.25,
+        "tstamp": "dcdd9e2e-7cda-4b68-8c37-4cb38d9ca2a7"
+      },
+      {
+        "id": "4",
+        "type": "smd",
+        "shape": "roundrect",
+        "at": {
+          "x": 1.1,
+          "y": 0.95
+        },
+        "size": [
+          1.06,
+          0.65
+        ],
+        "layers": [
+          "F.Cu",
+          "F.Paste",
+          "F.Mask"
+        ],
+        "roundrect_rratio": 0.25,
+        "tstamp": "30a17799-0347-4c87-8557-2d038978807e"
+      },
+      {
+        "id": "5",
+        "type": "smd",
+        "shape": "roundrect",
+        "at": {
+          "x": 1.1,
+          "y": -0.95
+        },
+        "size": [
+          1.06,
+          0.65
+        ],
+        "layers": [
+          "F.Cu",
+          "F.Paste",
+          "F.Mask"
+        ],
+        "roundrect_rratio": 0.25,
+        "tstamp": "eddb7f56-4e29-4afe-b2ef-d6121f8ebda6"
+      }
+    ],
+    "model": {
+      "file": "KICAD6_3DMODEL_DIR",
+      "offset": {
+        "xyz": [
+          0,
+          0,
+          0
+        ]
+      },
+      "scale": {
+        "xyz": [
+          1,
+          1,
+          1
+        ]
+      },
+      "rotate": {
+        "xyz": [
+          0,
+          0,
+          0
+        ]
+      }
+    }
+  }
+}

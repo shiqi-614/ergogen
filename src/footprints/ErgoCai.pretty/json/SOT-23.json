@@ -1,0 +1,220 @@
+{
+  "footprint": {
+    "name": "SOT-23",
+    "version": "20211014",
+    "generator": "pcbnew",
+    "layer": "F.Cu",
+    "tedit": "62126B22",
+    "attr": "smd",
+    "fp_text": {
+      "at": {
+        "x": 0,
+        "y": 2.54
+      },
+      "layer": "F.Fab",
+      "effects": {
+        "font": {
+          "size": [
+            1,
+            1
+          ],
+          "thickness": 0.15
+        }
+      },
+      "tstamp": "48ce0633-a41a-46c1-a25b-8eb8e3dc4645"
+    },
+    "fp_line": [
+      {
+        "start": {
+          "x": -1.35,
+          "y": -1.55
+        },
+        "end": {
+          "x": -0.6,
+          "y": -1.55
+        },
+        "layer": "F.SilkS",
+        "width": 0.12,
+        "tstamp": "58a73cbf-8cbe-4941-9156-17364a6b75b0"
+      },
+      {
+        "start": {
+          "x": -1.65,
+          "y": -0.6
+        },
+        "end": {
+          "x": -1.65,
+          "y": -1.25
+        },
+        "layer": "F.SilkS",
+        "width": 0.12,
+        "tstamp": "c365efd3-dd46-421b-ae92-db600776685f"
+      },
+      {
+        "start": {
+          "x": -0.15,
+          "y": -1.52
+        },
+        "end": {
+          "x": 0.7,
+          "y": -1.52
+        },
+        "layer": "F.Fab",
+        "width": 0.1,
+        "tstamp": "02b82248-0681-4451-accb-8e1d5edc2492"
+      },
+      {
+        "start": {
+          "x": 0.7,
+          "y": -1.52
+        },
+        "end": {
+          "x": 0.7,
+          "y": 1.52
+        },
+        "layer": "F.Fab",
+        "width": 0.1,
+        "tstamp": "73fd7b23-63c6-461d-a21f-7a0b0444c652"
+      },
+      {
+        "start": {
+          "x": -0.7,
+          "y": -0.95
+        },
+        "end": {
+          "x": -0.7,
+          "y": 1.5
+        },
+        "layer": "F.Fab",
+        "width": 0.1,
+        "tstamp": "e2306a83-a47d-4299-ab34-1ea9622f60a4"
+      },
+      {
+        "start": {
+          "x": -0.7,
+          "y": 1.52
+        },
+        "end": {
+          "x": 0.7,
+          "y": 1.52
+        },
+        "layer": "F.Fab",
+        "width": 0.1,
+        "tstamp": "f12800f3-8875-43f9-8f55-c9f0f68752e4"
+      },
+      {
+        "start": {
+          "x": -0.7,
+          "y": -0.95
+        },
+        "end": {
+          "x": -0.15,
+          "y": -1.52
+        },
+        "layer": "F.Fab",
+        "width": 0.1,
+        "tstamp": "f76ce469-5978-4cd7-a8e1-16fde7effa77"
+      }
+    ],
+    "fp_arc": {
+      "start": {
+        "x": -1.65,
+        "y": -1.25
+      },
+      "mid": "-1.562132 -1.462132",
+      "end": {
+        "x": -1.35,
+        "y": -1.55
+      },
+      "layer": "F.SilkS",
+      "width": 0.12,
+      "tstamp": "a727717c-7c9c-44c0-a3c6-5fff7415b5e7"
+    },
+    "pad": [
+      {
+        "id": "1",
+        "type": "smd",
+        "shape": "roundrect",
+        "at": {
+          "x": -1,
+          "y": -0.95
+        },
+        "size": [
+          0.9,
+          0.8
+        ],
+        "layers": [
+          "F.Cu",
+          "F.Paste",
+          "F.Mask"
+        ],
+        "roundrect_rratio": 0.25,
+        "tstamp": "a70f9d73-1c65-4eda-b034-83dcaa7f70be"
+      },
+      {
+        "id": "2",
+        "type": "smd",
+        "shape": "roundrect",
+        "at": {
+          "x": -1,
+          "y": 0.95
+        },
+        "size": [
+          0.9,
+          0.8
+        ],
+        "layers": [
+          "F.Cu",
+          "F.Paste",
+          "F.Mask"
+        ],
+        "roundrect_rratio": 0.25,
+        "tstamp": "41ab8394-dd62-42c7-8f83-3b8f275db407"
+      },
+      {
+        "id": "3",
+        "type": "smd",
+        "shape": "roundrect",
+        "at": {
+          "x": 1,
+          "y": 0
+        },
+        "size": [
+          0.9,
+          0.8
+        ],
+        "layers": [
+          "F.Cu",
+          "F.Paste",
+          "F.Mask"
+        ],
+        "roundrect_rratio": 0.25,
+        "tstamp": "cef191fb-1ccf-4508-89b7-93bbec2d71d8"
+      }
+    ],
+    "model": {
+      "file": "KICAD6_3DMODEL_DIR",
+      "offset": {
+        "xyz": [
+          0,
+          0,
+          0
+        ]
+      },
+      "scale": {
+        "xyz": [
+          1,
+          1,
+          1
+        ]
+      },
+      "rotate": {
+        "xyz": [
+          0,
+          0,
+          0
+        ]
+      }
+    }
+  }
+}

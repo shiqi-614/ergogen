@@ -1,0 +1,47 @@
+{
+  "footprint": {
+    "name": "Hole_Mount_M2",
+    "version": "20210424",
+    "generator": "pcbnew",
+    "layer": "F.Cu",
+    "tedit": "61659D79",
+    "fp_text": {
+      "at": {
+        "x": 0,
+        "y": 2.65
+      },
+      "layer": "F.Fab",
+      "effects": {
+        "font": {
+          "size": [
+            1,
+            1
+          ],
+          "thickness": 0.15
+        }
+      },
+      "tstamp": "2ae578ae-68a4-41d3-ba7c-e0622c7d6273"
+    },
+    "fp_circle": "",
+    "pad": [
+      {
+        "id": "np_thru_hole",
+        "type": "circle",
+        "at": {
+          "x": 0,
+          "y": 0
+        },
+        "size": [
+          2.1,
+          2.1
+        ],
+        "drill": "2.1",
+        "layers": [
+          "*.Cu",
+          "*.Mask"
+        ],
+        "tstamp": "df67f911-788a-4d08-b0e3-1fa47c161ef9"
+      }
+    ]
+  }
+}
