@@ -6,6 +6,7 @@ const points_lib = require('./points')
 const outlines_lib = require('./outlines')
 const cases_lib = require('./cases')
 const pcbs_lib = require('./pcbs')
+const pcbs_preview_lib = require('./pcbs_preview')
 
 const version = require('../package.json').version
 
@@ -78,12 +79,22 @@ const process = async (raw, debug=false, logger=()=>{}) => {
         empty = false
     }
 
-    logger('Scaffolding PCBs...')
-    const pcbs = pcbs_lib.parse(config, points, outlines, units)
-    results.pcbs = {}
-    for (const [pcb_name, pcb_text] of Object.entries(pcbs)) {
-        if (!debug && pcb_name.startsWith('_')) continue
-        results.pcbs[pcb_name] = pcb_text
+    // logger('Scaffolding PCBs...')
+    // const pcbs = pcbs_lib.parse(config, points, outlines, units)
+    // results.pcbs = {}
+    // for (const [pcb_name, pcb_text] of Object.entries(pcbs)) {
+        // if (!debug && pcb_name.startsWith('_')) continue
+        // results.pcbs[pcb_name] = pcb_text
+        // empty = false
+    // }
+
+    logger('Preview PCBs...')
+    const pcbs_preview = pcbs_preview_lib.parse(config, points, outlines, units)
+    results.pcbs_preview = {}
+    for (const [pcb_name, pcb_text] of Object.entries(pcbs_preview)) {
+        console.log("preview: " + pcb_name);
+        // if (!debug && pcb_name.startsWith('_')) continue
+        results.pcbs_preview[pcb_name] = io.twodee(pcb_text, debug);
         empty = false
     }
 

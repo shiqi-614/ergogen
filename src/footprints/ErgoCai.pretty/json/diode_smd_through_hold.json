@@ -448,7 +448,7 @@
     },
     "pad": [
       {
-        "id": "1",
+        "number": "1",
         "type": "thru_hole",
         "shape": "rect",
         "at": {
@@ -468,7 +468,7 @@
         "uuid": "96ea224b-9b16-4212-8243-66c1d0f2c761"
       },
       {
-        "id": "1",
+        "number": "1",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -488,7 +488,7 @@
         "uuid": "c060f3bc-9d6e-4521-86e7-36023d090843"
       },
       {
-        "id": "2",
+        "number": "2",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -508,7 +508,7 @@
         "uuid": "a653edff-313e-4a8c-be2b-e6418059a02b"
       },
       {
-        "id": "2",
+        "number": "2",
         "type": "thru_hole",
         "shape": "circle",
         "at": {

@@ -171,7 +171,7 @@
     ],
     "pad": [
       {
-        "id": "A1",
+        "number": "A1",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -192,7 +192,7 @@
         "uuid": "75ccd5c6-c10b-4d3d-97f2-cea12c05f0f7"
       },
       {
-        "id": "A1",
+        "number": "A1",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -213,7 +213,7 @@
         "uuid": "4f6c3309-97a0-46de-a50a-b23f1c5986bc"
       },
       {
-        "id": "A4",
+        "number": "A4",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -234,7 +234,7 @@
         "uuid": "e2505e9f-5324-4334-a2e4-a49e54a3aa95"
       },
       {
-        "id": "A4",
+        "number": "A4",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -255,7 +255,7 @@
         "uuid": "9f38738b-108f-457a-95f2-81d5d603d8d5"
       },
       {
-        "id": "A5",
+        "number": "A5",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -276,7 +276,7 @@
         "uuid": "15cd85cd-a729-47a0-b3fb-0b8f30f53d1e"
       },
       {
-        "id": "A6",
+        "number": "A6",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -297,7 +297,7 @@
         "uuid": "fdb4a085-e386-4eec-8ae9-b94358f96e08"
       },
       {
-        "id": "A7",
+        "number": "A7",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -318,7 +318,7 @@
         "uuid": "ec8efb21-7d56-4d66-84b5-90c7967d0b88"
       },
       {
-        "id": "A8",
+        "number": "A8",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -339,7 +339,7 @@
         "uuid": "6bc67c6c-1057-4a9c-9d30-b217ef542c73"
       },
       {
-        "id": "B5",
+        "number": "B5",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -360,7 +360,7 @@
         "uuid": "c5477461-cfc6-4152-b8f9-a8feb0542bf9"
       },
       {
-        "id": "B6",
+        "number": "B6",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -381,7 +381,7 @@
         "uuid": "e62c32a5-77c1-437f-a2fa-efc64cd9b665"
       },
       {
-        "id": "B7",
+        "number": "B7",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -402,7 +402,7 @@
         "uuid": "97773da5-de63-48c0-939a-9a057dd22c18"
       },
       {
-        "id": "B8",
+        "number": "B8",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -423,7 +423,7 @@
         "uuid": "bde29dda-09c0-4711-b22f-822a8b242f1b"
       },
       {
-        "id": "S1",
+        "number": "S1",
         "type": "thru_hole",
         "shape": "oval",
         "at": {
@@ -443,7 +443,7 @@
         "uuid": "5d20ac0d-426f-43d1-8bc3-f57de8151653"
       },
       {
-        "id": "S1",
+        "number": "S1",
         "type": "thru_hole",
         "shape": "oval",
         "at": {
@@ -463,7 +463,7 @@
         "uuid": "0b38957d-f6c1-4f4a-b480-1e8aa3fb9f7b"
       },
       {
-        "id": "S1",
+        "number": "S1",
         "type": "thru_hole",
         "shape": "oval",
         "at": {
@@ -483,7 +483,7 @@
         "uuid": "75c35555-580f-4ed0-9ecc-d84d4a3468ce"
       },
       {
-        "id": "S1",
+        "number": "S1",
         "type": "thru_hole",
         "shape": "oval",
         "at": {

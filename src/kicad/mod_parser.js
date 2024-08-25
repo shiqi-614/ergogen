@@ -1,7 +1,6 @@
 const fs = require('fs');
+const m = require('makerjs')
 const path = require('path');
-
-const folder_path = '../footprints';
 
 const listSet = new Set([
     'fp_line',
@@ -44,41 +43,34 @@ function saveJsonContent(filePath, jsonContent) {
     fs.writeFileSync(jsonFilePath, JSON.stringify(jsonContent, null, 2), 'utf-8');
 }
 
-// 使用示例
-const targetDir = '../footprints'; // 替换为你的目标目录
-const kicadModFiles = findKicadModFiles(targetDir);
+exports.parse = () => {
 
-console.log('Found .kicad_mod files:');
-console.log(kicadModFiles);
+    const targetDir = path.join(__dirname, '/../footprints'); // 替换为你的目标目录
+    const kicadModFiles = findKicadModFiles(targetDir);
+    console.log('Found .kicad_mod files:');
+    console.log(kicadModFiles);
 
-kicadModFiles.forEach(filePath => {
-    try {
-        console.log("parsing file: " + filePath);
-        const content = fs.readFileSync(filePath, 'utf-8');
-        const jsonContent = parseContent(content);
-        saveJsonContent(filePath, jsonContent);
-    } catch (e) {
-        console.log("cannot handle file: " + filePath);
-        console.log(e);
-    }
-});
+    const result = {};
+    kicadModFiles.forEach(filePath => {
+        try {
+            console.log("parsing file: " + filePath);
+            const content = fs.readFileSync(filePath, 'utf-8');
+            const jsonContent = parseContent(content);
+            const fileName = path.parse(filePath).name;
+            result[fileName] = jsonContent;
+            // saveJsonContent(filePath, jsonContent);
+        } catch (e) {
+            console.log("cannot handle file: " + filePath);
+            console.log(e);
+        }
+    });
 
-console.log('JSON files have been saved to the json folder within each .kicad_mod file\'s directory.');
-
-
-// Read the file content
-// fs.readFile(path, 'utf8', (err, data) => {
-    // if (err) {
-        // console.error(err);
-        // return;
+    // for (var key in result) {
+        // console.log(key);
     // }
 
-    // // Parse the content
-    // const parsedData = parseContent(data);
-
-    // // Output the parsed data
-    // console.log(JSON.stringify(parsedData, null, 2));
-// });
+    return result;
+};
 
 function parseContent(content) {
     const result = {};

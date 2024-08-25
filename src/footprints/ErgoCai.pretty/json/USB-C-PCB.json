@@ -193,23 +193,151 @@
         "tstamp": "f9211667-7b12-4b75-9ad5-a05daed4fec9"
       }
     ],
-    "fp_arc": {
-      "start": {
-        "x": 3.345,
-        "y": 2.75
+    "fp_arc": [
+      {
+        "start": {
+          "x": -3.094999,
+          "y": 2.500001
+        },
+        "mid": "-3.168223 2.676777",
+        "end": {
+          "x": -3.345,
+          "y": 2.75
+        },
+        "layer": "Edge.Cuts",
+        "width": 0.1,
+        "tstamp": "10e6ad40-4c9b-4e7a-abb6-52526119b631"
       },
-      "mid": "3.168224 2.676777",
-      "end": {
-        "x": 3.095001,
-        "y": 2.500001
+      {
+        "start": {
+          "x": -3.344999,
+          "y": 4.200001
+        },
+        "mid": "-3.418223 4.376777",
+        "end": {
+          "x": -3.595,
+          "y": 4.45
+        },
+        "layer": "Edge.Cuts",
+        "width": 0.1,
+        "tstamp": "15c0822f-06c4-43a3-b3b1-ced55de506b4"
       },
-      "layer": "Edge.Cuts",
-      "width": 0.1,
-      "tstamp": "f525da21-1385-4ff3-a214-599922e911b7"
-    },
+      {
+        "start": {
+          "x": 3.094999,
+          "y": 1.499999
+        },
+        "mid": "3.168223 1.323223",
+        "end": {
+          "x": 3.345,
+          "y": 1.25
+        },
+        "layer": "Edge.Cuts",
+        "width": 0.1,
+        "tstamp": "34fbeb3f-3b04-4488-bc55-c55f76c5f22d"
+      },
+      {
+        "start": {
+          "x": 4.125,
+          "y": 6.225
+        },
+        "mid": "3.895191 6.12981",
+        "end": {
+          "x": 3.8,
+          "y": 5.9
+        },
+        "layer": "Edge.Cuts",
+        "width": 0.1,
+        "tstamp": "5eb7b185-023b-4e2a-b9ee-59dec5806e01"
+      },
+      {
+        "start": {
+          "x": 4.45,
+          "y": 5.9
+        },
+        "mid": "4.35481 6.129809",
+        "end": {
+          "x": 4.125,
+          "y": 6.225
+        },
+        "layer": "Edge.Cuts",
+        "width": 0.1,
+        "tstamp": "60c822a3-1f88-439c-9ab5-e80bf6bf0c7c"
+      },
+      {
+        "start": {
+          "x": -3.8,
+          "y": 5.9
+        },
+        "mid": "-3.89519 6.129809",
+        "end": {
+          "x": -4.125,
+          "y": 6.225
+        },
+        "layer": "Edge.Cuts",
+        "width": 0.1,
+        "tstamp": "75fab20f-27fc-4b24-9a04-73052f68c7c8"
+      },
+      {
+        "start": {
+          "x": 3.595,
+          "y": 4.45
+        },
+        "mid": "3.418224 4.376777",
+        "end": {
+          "x": 3.345001,
+          "y": 4.200001
+        },
+        "layer": "Edge.Cuts",
+        "width": 0.1,
+        "tstamp": "86759ccb-2b27-4eea-ae65-efb3c3e7633e"
+      },
+      {
+        "start": {
+          "x": -4.125,
+          "y": 6.225
+        },
+        "mid": "-4.354809 6.12981",
+        "end": {
+          "x": -4.45,
+          "y": 5.9
+        },
+        "layer": "Edge.Cuts",
+        "width": 0.1,
+        "tstamp": "94096f04-6979-41d2-8f00-7f7946377572"
+      },
+      {
+        "start": {
+          "x": -3.345,
+          "y": 1.25
+        },
+        "mid": "-3.168224 1.323223",
+        "end": {
+          "x": -3.095001,
+          "y": 1.499999
+        },
+        "layer": "Edge.Cuts",
+        "width": 0.1,
+        "tstamp": "d7b30a93-8595-4375-b7cd-6d9f921ea89a"
+      },
+      {
+        "start": {
+          "x": 3.345,
+          "y": 2.75
+        },
+        "mid": "3.168224 2.676777",
+        "end": {
+          "x": 3.095001,
+          "y": 2.500001
+        },
+        "layer": "Edge.Cuts",
+        "width": 0.1,
+        "tstamp": "f525da21-1385-4ff3-a214-599922e911b7"
+      }
+    ],
     "pad": [
       {
-        "id": "A1",
+        "number": "A1",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -228,7 +356,7 @@
         "tstamp": "32e85fb1-9ee3-4b59-b67e-1e1c72815a9d"
       },
       {
-        "id": "A2",
+        "number": "A2",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -247,7 +375,7 @@
         "tstamp": "f3286871-9152-404e-b204-5be331747f23"
       },
       {
-        "id": "A3",
+        "number": "A3",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -266,7 +394,7 @@
         "tstamp": "5179f54f-b353-4a9d-9138-81b30668aa45"
       },
       {
-        "id": "A4",
+        "number": "A4",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -285,7 +413,7 @@
         "tstamp": "f31d4104-98c4-401c-bd23-bf60635684cc"
       },
       {
-        "id": "A5",
+        "number": "A5",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -304,7 +432,7 @@
         "tstamp": "6ae097af-2c3b-48cf-848c-cea9f4d6c24c"
       },
       {
-        "id": "A6",
+        "number": "A6",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -323,7 +451,7 @@
         "tstamp": "353848c7-1cf1-469c-9bd9-80100786d4b1"
       },
       {
-        "id": "A7",
+        "number": "A7",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -342,7 +470,7 @@
         "tstamp": "e41a55b9-e085-4aad-8ecc-1550ec8d802e"
       },
       {
-        "id": "A8",
+        "number": "A8",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -361,7 +489,7 @@
         "tstamp": "16aa63f4-0b0c-42d5-bf8e-05de99d31078"
       },
       {
-        "id": "A9",
+        "number": "A9",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -380,7 +508,7 @@
         "tstamp": "395a08e2-c0e3-495d-af1d-99e582aed83a"
       },
       {
-        "id": "A10",
+        "number": "A10",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -399,7 +527,7 @@
         "tstamp": "49161833-6184-4c50-a389-d9801ba17991"
       },
       {
-        "id": "A11",
+        "number": "A11",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -418,7 +546,7 @@
         "tstamp": "e2dbdb86-0d84-4ffb-a301-3996e30f015e"
       },
       {
-        "id": "A12",
+        "number": "A12",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -437,7 +565,7 @@
         "tstamp": "91e212e8-55dc-4cd4-8fd1-0ec7351b9519"
       },
       {
-        "id": "B1",
+        "number": "B1",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -456,7 +584,7 @@
         "tstamp": "51d9eeab-8506-4618-8ac5-9410e42c422c"
       },
       {
-        "id": "B2",
+        "number": "B2",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -475,7 +603,7 @@
         "tstamp": "1550b480-98cf-403f-9ed3-6713b946dd08"
       },
       {
-        "id": "B3",
+        "number": "B3",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -494,7 +622,7 @@
         "tstamp": "3233db8c-51e3-4dcd-8284-5688830ada36"
       },
       {
-        "id": "B4",
+        "number": "B4",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -513,7 +641,7 @@
         "tstamp": "98b5fd41-6856-4d34-bc02-2d1bbe8972be"
       },
       {
-        "id": "B5",
+        "number": "B5",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -532,7 +660,7 @@
         "tstamp": "21ccb6c5-91d1-45cc-87d8-8a6c3f62ae87"
       },
       {
-        "id": "B6",
+        "number": "B6",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -551,7 +679,7 @@
         "tstamp": "90d6b4cf-e583-4cbd-a6bf-b3f2f84e8bb8"
       },
       {
-        "id": "B7",
+        "number": "B7",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -570,7 +698,7 @@
         "tstamp": "aefc1721-698c-4de0-b600-890f3150e28a"
       },
       {
-        "id": "B8",
+        "number": "B8",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -589,7 +717,7 @@
         "tstamp": "95c6cb60-8450-42e8-8cd4-e874f3a1d721"
       },
       {
-        "id": "B9",
+        "number": "B9",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -608,7 +736,7 @@
         "tstamp": "e1ef8bdd-0588-4ddc-96cf-b8b3d064c2c4"
       },
       {
-        "id": "B10",
+        "number": "B10",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -627,7 +755,7 @@
         "tstamp": "d8d52191-7046-41b4-8391-611f7c02a18e"
       },
       {
-        "id": "B11",
+        "number": "B11",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -646,7 +774,7 @@
         "tstamp": "a4746b46-9d74-45a7-b2d9-a3c1fd6f0515"
       },
       {
-        "id": "B12",
+        "number": "B12",
         "type": "smd",
         "shape": "roundrect",
         "at": {

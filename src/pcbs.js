@@ -39,8 +39,8 @@ const net_obj = (name, index) => {
 const footprint = exports._footprint = (points, net_indexer, component_indexer, units, extra) => (config, name, point) => {
 
     // config sanitization
-    a.unexpected(config, name, ['what', 'params'])
-    const what = a.in(config.what, `${name}.what`, Object.keys(footprint_types))
+    // a.unexpected(config, name, ['what', 'params'])
+    // const what = a.in(config.what, `${name}.what`, Object.keys(footprint_types))
     const fp = footprint_types[what]
     const original_params = config.params || {}
 
@@ -214,9 +214,9 @@ exports.parse = (config, points, outlines, units) => {
             const where = filter(f.where, `${name}.where`, points, units, asym)
             const original_adjust = f.adjust // need to save, so the delete's don't get rid of it below
             const adjust = start => anchor(original_adjust || {}, `${name}.adjust`, points, start)(units)
-            delete f.asym
-            delete f.where
-            delete f.adjust
+            // delete f.asym
+            // delete f.where
+            // delete f.adjust
             for (const w of where) {
                 const aw = adjust(w.clone())
                 footprints.push(footprint_factory(f, name, aw))

@@ -109,7 +109,12 @@ exports.twodee = (model, debug) => {
     }
     if (debug) {
         result.yaml = assembly
-        result.svg = makerjs.exporter.toSVG(assembly)
+        const svgOptions = {
+            stroke: 'black',
+            strokeWidth: 1.0  // 这里设置线条粗细
+        };
+
+        result.svg = makerjs.exporter.toSVG(assembly, svgOptions)
     }
     return result
 }

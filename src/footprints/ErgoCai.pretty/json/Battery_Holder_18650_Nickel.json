@@ -315,7 +315,7 @@
     ],
     "pad": [
       {
-        "id": "1",
+        "number": "1",
         "type": "thru_hole",
         "shape": "circle",
         "at": {
@@ -335,7 +335,7 @@
         "uuid": "024e049d-59f2-42f0-911b-c1bf01c32ac3"
       },
       {
-        "id": "1",
+        "number": "1",
         "type": "thru_hole",
         "shape": "circle",
         "at": {
@@ -355,7 +355,7 @@
         "uuid": "4b62ba53-b6d0-424b-9e6d-0507763daf13"
       },
       {
-        "id": "1",
+        "number": "1",
         "type": "thru_hole",
         "shape": "circle",
         "at": {
@@ -375,7 +375,7 @@
         "uuid": "363b7b93-db6e-4bd3-bef8-5893d8a888c8"
       },
       {
-        "id": "2",
+        "number": "2",
         "type": "thru_hole",
         "shape": "circle",
         "at": {
@@ -395,7 +395,7 @@
         "uuid": "43b17226-859b-4872-a050-72419703e671"
       },
       {
-        "id": "2",
+        "number": "2",
         "type": "thru_hole",
         "shape": "circle",
         "at": {
@@ -415,7 +415,7 @@
         "uuid": "e4011ba8-968b-420c-9113-1a42b7507d10"
       },
       {
-        "id": "2",
+        "number": "2",
         "type": "thru_hole",
         "shape": "circle",
         "at": {

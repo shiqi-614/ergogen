@@ -298,8 +298,8 @@
     "fp_circle": "\t\t",
     "pad": [
       {
-        "id": "np_thru_hole",
-        "type": "circle",
+        "type": "np_thru_hole",
+        "shape": "circle",
         "at": {
           "x": -5.08,
           "y": 0,
@@ -317,8 +317,8 @@
         "uuid": "c4955105-53a9-44fa-b0dc-7663daca78e6"
       },
       {
-        "id": "np_thru_hole",
-        "type": "circle",
+        "type": "np_thru_hole",
+        "shape": "circle",
         "at": {
           "x": -4.5,
           "y": 0
@@ -335,8 +335,8 @@
         "uuid": "3f35c8a4-f063-4b5c-9067-b3a6a08914e4"
       },
       {
-        "id": "np_thru_hole",
-        "type": "circle",
+        "type": "np_thru_hole",
+        "shape": "circle",
         "at": {
           "x": -2.54,
           "y": 5.08,
@@ -354,8 +354,8 @@
         "uuid": "bb234d8f-ee0a-4c62-8f78-f102936feff7"
       },
       {
-        "id": "np_thru_hole",
-        "type": "circle",
+        "type": "np_thru_hole",
+        "shape": "circle",
         "at": {
           "x": 0,
           "y": 0,
@@ -373,8 +373,8 @@
         "uuid": "da44b7b2-a5c2-4bd8-a33c-ad7036184612"
       },
       {
-        "id": "np_thru_hole",
-        "type": "circle",
+        "type": "np_thru_hole",
+        "shape": "circle",
         "at": {
           "x": 3.81,
           "y": 2.54,
@@ -392,8 +392,8 @@
         "uuid": "2fbae293-1f6b-440a-b61c-c36f28c154cb"
       },
       {
-        "id": "np_thru_hole",
-        "type": "circle",
+        "type": "np_thru_hole",
+        "shape": "circle",
         "at": {
           "x": 4.5,
           "y": 0
@@ -410,8 +410,8 @@
         "uuid": "67539cf4-366e-481f-b7ff-841c35214b9b"
       },
       {
-        "id": "np_thru_hole",
-        "type": "circle",
+        "type": "np_thru_hole",
+        "shape": "circle",
         "at": {
           "x": 5.08,
           "y": 0,
@@ -429,7 +429,7 @@
         "uuid": "e90a3ace-7e1a-4e2e-a83d-dc2be17634e1"
       },
       {
-        "id": "1",
+        "number": "1",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -450,7 +450,7 @@
         "uuid": "5aec9ce2-a1a5-48dd-a91a-85aff1a08de8"
       },
       {
-        "id": "1",
+        "number": "1",
         "type": "thru_hole",
         "shape": "circle",
         "at": {
@@ -470,7 +470,7 @@
         "uuid": "2f31fdd0-86f2-4321-a666-c57299224895"
       },
       {
-        "id": "2",
+        "number": "2",
         "type": "thru_hole",
         "shape": "circle",
         "at": {
@@ -490,7 +490,7 @@
         "uuid": "9a9c10b3-74bf-4b37-97f3-945d27c1d727"
       },
       {
-        "id": "2",
+        "number": "2",
         "type": "smd",
         "shape": "roundrect",
         "at": {

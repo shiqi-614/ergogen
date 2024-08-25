@@ -79,7 +79,7 @@
     ],
     "pad": [
       {
-        "id": "1",
+        "number": "1",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -99,7 +99,7 @@
         "tstamp": "d71beec4-8dc1-407b-8e0b-e5e8d4f27d54"
       },
       {
-        "id": "2",
+        "number": "2",
         "type": "smd",
         "shape": "roundrect",
         "at": {

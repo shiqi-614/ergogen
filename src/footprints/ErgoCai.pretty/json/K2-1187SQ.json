@@ -620,7 +620,7 @@
     "fp_circle": "\t\t",
     "pad": [
       {
-        "id": "1",
+        "number": "1",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -640,7 +640,7 @@
         "uuid": "c8724621-8200-4c52-9c9d-eb4c0eeede47"
       },
       {
-        "id": "1",
+        "number": "1",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -660,7 +660,7 @@
         "uuid": "5bec5234-df5c-4a40-87d7-3ba6ff4049d3"
       },
       {
-        "id": "2",
+        "number": "2",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -680,7 +680,7 @@
         "uuid": "ee3fcce8-57e8-4ccf-9dea-a97fa20c9cbe"
       },
       {
-        "id": "2",
+        "number": "2",
         "type": "smd",
         "shape": "roundrect",
         "at": {

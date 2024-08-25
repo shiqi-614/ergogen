@@ -157,8 +157,8 @@
     ],
     "pad": [
       {
-        "id": "smd",
-        "type": "roundrect",
+        "type": "smd",
+        "shape": "roundrect",
         "at": {
           "x": 3.65,
           "y": 1.11,
@@ -177,8 +177,8 @@
         "tstamp": "155622da-6320-497f-9761-4a2b257990f7"
       },
       {
-        "id": "smd",
-        "type": "roundrect",
+        "type": "smd",
+        "shape": "roundrect",
         "at": {
           "x": 3.65,
           "y": -1.1,
@@ -197,8 +197,8 @@
         "tstamp": "986eb10f-5d14-4898-b65c-825de4c701a7"
       },
       {
-        "id": "smd",
-        "type": "roundrect",
+        "type": "smd",
+        "shape": "roundrect",
         "at": {
           "x": -3.65,
           "y": 1.11,
@@ -217,8 +217,8 @@
         "tstamp": "a6df2e74-1ef0-4ee8-98f1-6082c041e85f"
       },
       {
-        "id": "smd",
-        "type": "roundrect",
+        "type": "smd",
+        "shape": "roundrect",
         "at": {
           "x": -3.65,
           "y": -1.1,
@@ -237,8 +237,8 @@
         "tstamp": "b25bf7fb-4c0d-4d55-bc4e-fc8e2fdee554"
       },
       {
-        "id": "np_thru_hole",
-        "type": "circle",
+        "type": "np_thru_hole",
+        "shape": "circle",
         "at": {
           "x": -1.5,
           "y": 0,
@@ -256,8 +256,8 @@
         "tstamp": "e7155f60-f874-4fda-86cc-325580df4583"
       },
       {
-        "id": "np_thru_hole",
-        "type": "circle",
+        "type": "np_thru_hole",
+        "shape": "circle",
         "at": {
           "x": 1.5,
           "y": 0,
@@ -275,7 +275,7 @@
         "tstamp": "edba3ce3-7820-48b3-a5ef-ed93131e47e3"
       },
       {
-        "id": "1",
+        "number": "1",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -296,7 +296,7 @@
         "tstamp": "9782fe58-d5f3-4dde-a369-7c7e2522e5a3"
       },
       {
-        "id": "2",
+        "number": "2",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -317,7 +317,7 @@
         "tstamp": "daf18c9b-fef1-4339-9587-1fafbcf2bf29"
       },
       {
-        "id": "3",
+        "number": "3",
         "type": "smd",
         "shape": "roundrect",
         "at": {

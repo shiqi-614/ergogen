@@ -91,7 +91,7 @@
     ],
     "pad": [
       {
-        "id": "1",
+        "number": "1",
         "type": "thru_hole",
         "shape": "roundrect",
         "at": {
@@ -111,7 +111,7 @@
         "tstamp": "7e69028c-bfe5-4af6-a62c-268d733d7a58"
       },
       {
-        "id": "2",
+        "number": "2",
         "type": "thru_hole",
         "shape": "oval",
         "at": {
@@ -130,7 +130,7 @@
         "tstamp": "d09414a2-7c23-4602-8c01-9119835a2c8e"
       },
       {
-        "id": "3",
+        "number": "3",
         "type": "thru_hole",
         "shape": "oval",
         "at": {
@@ -149,7 +149,7 @@
         "tstamp": "a6917092-85a7-4264-8edf-c954f6dac78e"
       },
       {
-        "id": "4",
+        "number": "4",
         "type": "thru_hole",
         "shape": "oval",
         "at": {

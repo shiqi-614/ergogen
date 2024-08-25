@@ -130,8 +130,8 @@
     ],
     "pad": [
       {
-        "id": "thru_hole",
-        "type": "oval",
+        "type": "thru_hole",
+        "shape": "oval",
         "at": {
           "x": 0,
           "y": 6.4
@@ -148,8 +148,8 @@
         "tstamp": "4af82960-def1-47f6-9f83-4912dbbe9404"
       },
       {
-        "id": "thru_hole",
-        "type": "oval",
+        "type": "thru_hole",
+        "shape": "oval",
         "at": {
           "x": 6.4,
           "y": -0.01,
@@ -167,8 +167,8 @@
         "tstamp": "9d32e5d9-762f-4fb0-95d4-e915f5960276"
       },
       {
-        "id": "thru_hole",
-        "type": "oval",
+        "type": "thru_hole",
+        "shape": "oval",
         "at": {
           "x": 0,
           "y": -6.4
@@ -185,8 +185,8 @@
         "tstamp": "f5e63e80-b4d0-48ac-88c1-8033eea763b8"
       },
       {
-        "id": "thru_hole",
-        "type": "oval",
+        "type": "thru_hole",
+        "shape": "oval",
         "at": {
           "x": -6.4,
           "y": 0,

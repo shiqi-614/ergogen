@@ -78,8 +78,8 @@
     ],
     "pad": [
       {
-        "id": "np_thru_hole",
-        "type": "circle",
+        "type": "np_thru_hole",
+        "shape": "circle",
         "at": {
           "x": -2.3814,
           "y": 1.38915
@@ -96,8 +96,8 @@
         "tstamp": "05911ce4-e348-4e8b-8f5e-d862071ed769"
       },
       {
-        "id": "np_thru_hole",
-        "type": "circle",
+        "type": "np_thru_hole",
+        "shape": "circle",
         "at": {
           "x": 0,
           "y": 1.38915
@@ -114,8 +114,8 @@
         "tstamp": "196a07e6-6a28-4087-a1d8-98d721e0ba5d"
       },
       {
-        "id": "np_thru_hole",
-        "type": "circle",
+        "type": "np_thru_hole",
+        "shape": "circle",
         "at": {
           "x": -1.1907,
           "y": 1.38915
@@ -132,8 +132,8 @@
         "tstamp": "205d660b-77ed-430d-9cf1-34d6cdae8361"
       },
       {
-        "id": "np_thru_hole",
-        "type": "circle",
+        "type": "np_thru_hole",
+        "shape": "circle",
         "at": {
           "x": 1.1907,
           "y": 1.38915
@@ -150,8 +150,8 @@
         "tstamp": "29694122-e1cf-4e64-8273-2aebfb782ccc"
       },
       {
-        "id": "np_thru_hole",
-        "type": "circle",
+        "type": "np_thru_hole",
+        "shape": "circle",
         "at": {
           "x": -1.1907,
           "y": -1.38915
@@ -168,8 +168,8 @@
         "tstamp": "43039a68-a9c4-434a-9990-7db4200c43f4"
       },
       {
-        "id": "np_thru_hole",
-        "type": "circle",
+        "type": "np_thru_hole",
+        "shape": "circle",
         "at": {
           "x": -2.3814,
           "y": -1.38915
@@ -186,8 +186,8 @@
         "tstamp": "478b4fcb-801f-4501-9bf2-85f0dadac30a"
       },
       {
-        "id": "np_thru_hole",
-        "type": "circle",
+        "type": "np_thru_hole",
+        "shape": "circle",
         "at": {
           "x": 2.3814,
           "y": 1.38915
@@ -204,8 +204,8 @@
         "tstamp": "6e5fd8ca-f6aa-4669-9056-cccd6103483c"
       },
       {
-        "id": "np_thru_hole",
-        "type": "circle",
+        "type": "np_thru_hole",
+        "shape": "circle",
         "at": {
           "x": 1.1907,
           "y": -1.38915
@@ -222,8 +222,8 @@
         "tstamp": "a4d08586-93c1-4bbd-93e6-0936433ce694"
       },
       {
-        "id": "np_thru_hole",
-        "type": "circle",
+        "type": "np_thru_hole",
+        "shape": "circle",
         "at": {
           "x": 0,
           "y": -1.38915
@@ -240,8 +240,8 @@
         "tstamp": "d0c8f238-4c42-49ff-8265-6620f3644f49"
       },
       {
-        "id": "np_thru_hole",
-        "type": "circle",
+        "type": "np_thru_hole",
+        "shape": "circle",
         "at": {
           "x": 2.3814,
           "y": -1.38915

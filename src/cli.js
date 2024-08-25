@@ -185,8 +185,18 @@ for (const [name, _case] of Object.entries(results.cases)) {
     composite(_case, `cases/${name}`)
 }
 
-for (const [name, pcb] of Object.entries(results.pcbs)) {
-    single(pcb, `pcbs/${name}.kicad_pcb`)
+if (results.pcbs) {
+    for (const [name, pcb] of Object.entries(results.pcbs)) {
+        single(pcb, `pcbs/${name}.kicad_pcb`)
+    }
+}
+
+if (results.pcbs_preview) {
+    for (const [name, pcb_preview] of Object.entries(results.pcbs_preview)) {
+        console.log("preview name: " + name);
+        // console.log("preview data: " + JSON.stringify(pcb_preview));
+        composite(pcb_preview, `preview/${name}`)
+    }
 }
 
 // goodbye

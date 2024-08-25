@@ -215,26 +215,45 @@
         "uuid": "6db18f3f-49e2-4311-8e26-649b9850f60c"
       }
     ],
-    "fp_arc": {
-      "start": {
-        "x": -2.046,
-        "y": 0.8
+    "fp_arc": [
+      {
+        "start": {
+          "x": -2.3,
+          "y": -0.546
+        },
+        "mid": "-2.225605 -0.725605",
+        "end": {
+          "x": -2.046,
+          "y": -0.8
+        },
+        "stroke": {
+          "width": 0.12,
+          "type": "solid"
+        },
+        "layer": "F.SilkS",
+        "uuid": "be5caee1-0f84-4aac-a5fb-c545f73d9e2e"
       },
-      "mid": "-2.225605 0.725605",
-      "end": {
-        "x": -2.3,
-        "y": 0.546
-      },
-      "stroke": {
-        "width": 0.12,
-        "type": "solid"
-      },
-      "layer": "F.SilkS",
-      "uuid": "7bc722bb-81de-4969-9cba-6fb52ac4e3ae"
-    },
+      {
+        "start": {
+          "x": -2.046,
+          "y": 0.8
+        },
+        "mid": "-2.225605 0.725605",
+        "end": {
+          "x": -2.3,
+          "y": 0.546
+        },
+        "stroke": {
+          "width": 0.12,
+          "type": "solid"
+        },
+        "layer": "F.SilkS",
+        "uuid": "7bc722bb-81de-4969-9cba-6fb52ac4e3ae"
+      }
+    ],
     "pad": [
       {
-        "id": "1",
+        "number": "1",
         "type": "smd",
         "shape": "roundrect",
         "at": {
@@ -254,7 +273,7 @@
         "uuid": "d11eb9c8-f78f-4ed4-bf09-b84121b86341"
       },
       {
-        "id": "2",
+        "number": "2",
         "type": "smd",
         "shape": "roundrect",
         "at": {

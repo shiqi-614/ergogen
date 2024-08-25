@@ -24,8 +24,8 @@
     },
     "pad": [
       {
-        "id": "np_thru_hole",
-        "type": "circle",
+        "type": "np_thru_hole",
+        "shape": "circle",
         "at": {
           "x": 0,
           "y": 0
