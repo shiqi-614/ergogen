@@ -145,3 +145,63 @@ pcbs:
           from: "{{row_net}}"
           to: "{{column_net}}"
           keycaps: true
+      diodes:
+        what: Diode-Dual
+        where: true
+        adjust:
+          shift: [0, -8.4]
+        params:
+          from: "{{row_net}}"
+          to: "{{colrow}}"  
+      battery:
+        what: Battery_Holder_18650_Nickel
+        where:
+          ref.aggregate.parts: [matrix_inner_home]
+          shift: [20.5,10]
+      switch:
+        what: MSK-12C02
+        where:
+          ref.aggregate.parts: [matrix_middle_num]
+          shift: [0,16.2]
+      RGB_led:
+        what: LED_RGB_5050-6
+        where:
+          ref.aggregate.parts: [matrix_inner_num]
+          shift: [0,15]
+      blue_led:
+        what: LED_0603_1608Metric
+        where:
+          ref.aggregate.parts: [matrix_inner_num]
+          shift: [10,15]
+          rotate: 90
+      red_led:
+        what: LED_0603_1608Metric
+        where:
+          ref.aggregate.parts: [matrix_inner_num]
+          shift: [30,15]
+          rotate: 90
+      usb_c:
+        what: USB_C_Receptacle_HRO_TYPE-C-31-M-12
+        where:
+          ref.aggregate.parts: [matrix_inner_num]
+          shift: [20.5,18]
+          rotate: 180
+      nrf52840:
+        what: Holyiot-18010-nRF52840
+        where:
+          ref.aggregate.parts: [matrix_inner_home]
+          shift: [20.5,12]
+          rotate: -90
+      reset:
+        what: K2-1187SQ
+        where:
+          ref.aggregate.parts: [matrix_inner_home]
+          shift: [20.5, -5]
+          rotate: 0
+      connector:
+        what: Connector_THT_1x4_2.54
+        where:
+          ref.aggregate.parts: [matrix_inner_home]
+          shift: [30, -5]
+      
+

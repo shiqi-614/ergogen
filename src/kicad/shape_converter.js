@@ -2,10 +2,15 @@ const fs = require('fs');
 const m = require('makerjs')
 const path = require('path');
 
+var idx = 0;
+
+function getId(prefix, item) {
+    return prefix + '-' + (item.uuid || item.tstamp || ++idx);
+}
 
 class CircleStrategy {
     convert(item) {
-        const key = 'circle-' + item.uuid;
+        const key = getId('circle', item);
         var circle = new m.paths.Circle([item.at.x, item.at.y*-1], item.size[0]/2);
         console.log("kicad circle: " + JSON.stringify(item));
         console.log("convert to makerjs circle: "+ JSON.stringify(circle));
@@ -13,11 +18,22 @@ class CircleStrategy {
     }
 }
 
+class OvalStrategy {
+    convert(item) {
+        const key = getId('oval', item);
+        var oval = new m.models.Oval(item.size[0], item.size[1]);
+        oval.origin = [item.at.x - item.size[0]/2, item.at.y * -1 - item.size[0]/2];
+        console.log("kicad oval: " + JSON.stringify(item));
+        console.log("convert to makerjs oval: "+ JSON.stringify(oval));
+        return {[key]: oval};
+    }
+}
+
 // 策略类 - 处理 RoundRect 类型
 class RoundRectStrategy {
     convert(item) {
         // console.log("convert roundrect: " + JSON.stringify(item));
-        var key = 'roundrect-' + item.uuid;
+        var key = getId('roundrect', item);
         // var roundrect = new m.models.Rectangle(
             // item.size[0], 
             // item.size[1]
@@ -88,7 +104,7 @@ class ArcStrategy {
             startAngle: startAngle,
             endAngle: endAngle
         };
-        var key = 'arc-' + item.uuid;
+        var key = getId('arc', item);
         console.log("kicad arc: " + JSON.stringify(item));
         console.log("convert to makerjs arc: "+ JSON.stringify(arc));
         return {[key]: arc};
@@ -97,7 +113,7 @@ class ArcStrategy {
 
 class LineStrategy {
     convert(item) {
-        var key = 'line-' + item.uuid;
+        var key = getId('line', item);
         var line = {
             type: 'line',
             origin: [item.start.x, item.start.y * -1],
@@ -109,6 +125,20 @@ class LineStrategy {
     }
 }
 
+class RectStrategy {
+    convert(item) {
+        var key = getId('rect', item);
+        var rect = new m.models.Rectangle(
+            item.size[0], 
+            item.size[1]
+        )
+        rect.origin = [item.at.x - item.size[0]/2, item.at.y * -1 - item.size[1]/2];
+        console.log("kicad rect: " + JSON.stringify(item));
+        console.log("convert to makerjs rect: "+ JSON.stringify(rect));
+        return {[key]: rect};
+    }
+}
+
 
 class ShapeConverter {
     constructor() {
@@ -116,12 +146,14 @@ class ShapeConverter {
             'circle': new CircleStrategy(),
             'roundrect': new RoundRectStrategy(),
             'line': new LineStrategy(),
-            'arc': new ArcStrategy()
+            'arc': new ArcStrategy(),
+            'rect': new RectStrategy(),
+            'oval': new OvalStrategy()
         };
     }
 
     convert(item, shape) {
-        // console.log("pad: " + JSON.stringify(item));
+        console.log("pad: " + JSON.stringify(item));
         const strategy = this.strategies[item.shape||shape];
         if (!strategy) {
             throw new Error(`Unsupported shape: ${item.shape} or ${shape}`);
@@ -133,7 +165,11 @@ class ShapeConverter {
 const shape_converter = new ShapeConverter();
 
 function layerCheck(item) {
-    return item.hasOwnProperty('layer') && (item.layer.endsWith("CrtYd") || item.layer.endsWith("Dwgs.User"));
+    return item.hasOwnProperty('layer') && 
+        (item.layer.endsWith("CrtYd") 
+            || item.layer.endsWith("Dwgs.User")
+            || item.layer.endsWith("Fab")
+        );
 }
 
 // 上下文类 - 负责选择策略
@@ -142,15 +178,24 @@ exports.convert = (footprint) => {
     // const real_shape = item.shape||shape;
     // console.log("real shape: " + real_shape);
     
-    const line_list = footprint.fp_line
-        .filter((item) => layerCheck(item))
-        .flatMap((item) => shape_converter.convert(item, 'line'));
-    const pad_list = footprint.pad
-        .flatMap((item) => shape_converter.convert(item));
-    const arc_list = footprint.fp_arc
-        .filter((item) => layerCheck(item))
-        .flatMap((item) => shape_converter.convert(item, 'arc'));
-    const allItems = Object.assign({}, ...line_list, ...pad_list, ...arc_list);
+    var allItems = {};
+    if (footprint.fp_line) {
+        const line_list = footprint.fp_line
+            .filter((item) => layerCheck(item))
+            .flatMap((item) => shape_converter.convert(item, 'line'));
+        allItems = Object.assign(allItems, ...line_list);
+    }
+    if (footprint.pad) {
+        const pad_list = footprint.pad
+            .flatMap((item) => shape_converter.convert(item));
+        allItems = Object.assign(allItems, ...pad_list);
+    }
+    if (footprint.fp_arc) {
+        const arc_list = footprint.fp_arc
+            .filter((item) => layerCheck(item))
+            .flatMap((item) => shape_converter.convert(item, 'arc'));
+        allItems = Object.assign(allItems, ...arc_list);
+    }
     // const allItems = Object.assign({}, ...pad_list);
 
     const pathItems = {};

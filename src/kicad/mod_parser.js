@@ -80,57 +80,68 @@ function parseContent(content) {
     contentObjStack.push(["root", result]);
     let currentContent = '';
     let curObj = result;
+    let isComment = false;
 
     for (let i = 0; i < content.length; i++) {
         const char = content[i];
-
-        if (char === '(') {
-            if (currentContent.trim()) {
-                const section  = parseSection(currentContent);
-                if (section) {
-                    const {key, data} = section;
-                    contentObjStack.push([key, data]);
-                    if (listSet.has(key)) {
-                        if (!curObj.hasOwnProperty(key)) {
-                            curObj[key] = [];
+        if (isComment) {
+            currentContent += char;
+            if (char == '"') {
+                isComment = false;
+            }
+        } else {
+            if (char === '(') {
+                if (currentContent.trim()) {
+                    const section  = parseSection(currentContent);
+                    if (section) {
+                        const {key, data} = section;
+                        contentObjStack.push([key, data]);
+                        if (listSet.has(key)) {
+                            if (!curObj.hasOwnProperty(key)) {
+                                curObj[key] = [];
+                            }
+                            curObj[key].push(data);
+                        } else {
+                            // console.log(key);
+                            // console.log(JSON.stringify(data));
+                            // console.log("cur");
+                            // console.log(JSON.stringify(curObj));
+                            curObj[key] = data;
                         }
-                        curObj[key].push(data);
-                    } else {
-                        // console.log(key);
-                        // console.log(JSON.stringify(data));
-                        // console.log("cur");
-                        // console.log(JSON.stringify(curObj));
+                        curObj = data;
+                    }
+                }
+                bracketStack.push(char);
+                currentContent = '';
+            } else if (char === ')') {
+                bracketStack.pop();
+                if (currentContent.trim()) {
+                    const section  = parseSection(currentContent);
+                    if (section) {
+                        const {key, data} = section;
                         curObj[key] = data;
                     }
+                    // console.log("add ");
+                    // console.log("key:" + key+ " obj:" + JSON.stringify(data, null, 2));
+                    // console.log("curObj" + JSON.stringify(curObj, null, 2));
+                } else {
+                    [key, data] =  contentObjStack.pop();
+                    // console.log("pop");
+                    // console.log("key:" + key+ " obj:" + JSON.stringify(data, null, 2));
+                    [key, data] = contentObjStack[contentObjStack.length - 1];
+                    // console.log("cur");
+                    // console.log("key:" + key+ " obj:" + JSON.stringify(data, null, 2));
                     curObj = data;
                 }
-            }
-            bracketStack.push(char);
-            currentContent = '';
-        } else if (char === ')') {
-            bracketStack.pop();
-            if (currentContent.trim()) {
-                const section  = parseSection(currentContent);
-                if (section) {
-                    const {key, data} = section;
-                    curObj[key] = data;
-                }
-                // console.log("add ");
-                // console.log("key:" + key+ " obj:" + JSON.stringify(data, null, 2));
-                // console.log("curObj" + JSON.stringify(curObj, null, 2));
+                currentContent = '';
             } else {
-                [key, data] =  contentObjStack.pop();
-                // console.log("pop");
-                // console.log("key:" + key+ " obj:" + JSON.stringify(data, null, 2));
-                [key, data] = contentObjStack[contentObjStack.length - 1];
-                // console.log("cur");
-                // console.log("key:" + key+ " obj:" + JSON.stringify(data, null, 2));
-                curObj = data;
+                currentContent += char;
+                if (char == '"') {
+                    isComment = true;
+                }
             }
-            currentContent = '';
-        } else {
-            currentContent += char;
         }
+
 
         // console.log("root:" + JSON.stringify(result));
     }

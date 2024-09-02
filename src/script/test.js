@@ -129,7 +129,6 @@ function convertFpArc(item) {
         endAngle: endAngle
     };
     var key = 'arc-' + item.uuid;
-    console.log("arc:" + JSON.stringify(arc));
     return {[key]: arc};
 }
 

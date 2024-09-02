@@ -104,7 +104,6 @@ exports.parse = (config, points, outlines, units) => {
             for (const w of where) {
                 const point = adjust(w.clone())
                 // console.log("preview point: " + JSON.stringify(point));
-
                 let [shape, bbox] = shape_maker(point) // point is passed for mirroring metadata only...
                 // console.log("share: " + JSON.stringify(shape, null, 2));
                 shape = point.position(shape) // ...actual positioning happens here
@@ -115,9 +114,7 @@ exports.parse = (config, points, outlines, units) => {
             // m.model.simplify(results[pcb_name]);
             m.model.originate(results[pcb_name])
             // console.log("final PCB:" + JSON.stringify(results[pcb_name]));
-
         }
-
     }
 
     return results
