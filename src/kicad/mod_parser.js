@@ -1,6 +1,36 @@
 const fs = require('fs');
 const m = require('makerjs')
 const path = require('path');
+const axios = require('axios');
+const NodeCache = require('node-cache');
+
+const cache = new NodeCache({ stdTTL: 3600 * 24 * 7});
+
+async function fetchAndCache(footprintName) {
+    // 尝试从缓存中获取数据
+    const cachedData = cache.get(footprintName);
+    
+    if (cachedData) {
+        console.log('Returning cached data');
+        return cachedData;
+    }
+    
+    try {
+        // 如果缓存中没有数据，进行HTTP请求
+        const url = `https://raw.githubusercontent.com/shiqi-614/ErgoCai.pretty/main/${footprintName}.kicad_mod`;
+        const response = await axios.get(url);
+        const data = parseContent(response.data);
+
+        // 将数据保存到缓存中
+        cache.set(footprintName, data);
+        console.log('Fetched and cached data');
+        
+        return data;
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        throw error;
+    }
+}
 
 const listSet = new Set([
     'fp_line',
@@ -43,34 +73,37 @@ function saveJsonContent(filePath, jsonContent) {
     fs.writeFileSync(jsonFilePath, JSON.stringify(jsonContent, null, 2), 'utf-8');
 }
 
-exports.parse = () => {
 
-    const targetDir = path.join(__dirname, '/../footprints'); // 替换为你的目标目录
-    const kicadModFiles = findKicadModFiles(targetDir);
-    console.log('Found .kicad_mod files:');
-    console.log(kicadModFiles);
+module.exports = { fetchAndCache };
 
-    const result = {};
-    kicadModFiles.forEach(filePath => {
-        try {
-            console.log("parsing file: " + filePath);
-            const content = fs.readFileSync(filePath, 'utf-8');
-            const jsonContent = parseContent(content);
-            const fileName = path.parse(filePath).name;
-            result[fileName] = jsonContent;
-            // saveJsonContent(filePath, jsonContent);
-        } catch (e) {
-            console.log("cannot handle file: " + filePath);
-            console.log(e);
-        }
-    });
+// exports.parse = () => {
 
-    // for (var key in result) {
-        // console.log(key);
-    // }
+    // const targetDir = path.join(__dirname, '/../footprints'); // 替换为你的目标目录
+    // const kicadModFiles = findKicadModFiles(targetDir);
+    // console.log('Found .kicad_mod files:');
+    // console.log(kicadModFiles);
 
-    return result;
-};
+    // const result = {};
+    // kicadModFiles.forEach(filePath => {
+        // try {
+            // console.log("parsing file: " + filePath);
+            // const content = fs.readFileSync(filePath, 'utf-8');
+            // const jsonContent = parseContent(content);
+            // const fileName = path.parse(filePath).name;
+            // result[fileName] = jsonContent;
+            // // saveJsonContent(filePath, jsonContent);
+        // } catch (e) {
+            // console.log("cannot handle file: " + filePath);
+            // console.log(e);
+        // }
+    // });
+
+    // // for (var key in result) {
+        // // console.log(key);
+    // // }
+
+    // return result;
+// };
 
 function parseContent(content) {
     const result = {};

@@ -89,7 +89,7 @@ const process = async (raw, debug=false, logger=()=>{}) => {
     // }
 
     logger('Preview PCBs...')
-    const pcbs_preview = pcbs_preview_lib.parse(config, points, outlines, units)
+    const pcbs_preview = await pcbs_preview_lib.parse(config, points, outlines, units)
     results.pcbs_preview = {}
     for (const [pcb_name, pcb_text] of Object.entries(pcbs_preview)) {
         console.log("preview: " + pcb_name);

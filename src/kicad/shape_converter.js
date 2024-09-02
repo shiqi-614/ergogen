@@ -153,7 +153,7 @@ class ShapeConverter {
     }
 
     convert(item, shape) {
-        console.log("pad: " + JSON.stringify(item));
+        // console.log("pad: " + JSON.stringify(item));
         const strategy = this.strategies[item.shape||shape];
         if (!strategy) {
             throw new Error(`Unsupported shape: ${item.shape} or ${shape}`);

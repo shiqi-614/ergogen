@@ -7,11 +7,13 @@ const o = require('./operation')
 const prep = require('./prepare')
 const anchor = require('./anchor').parse
 const filter = require('./filter').parse
-const kicad_mod_parser = require('./kicad/mod_parser')
+// const kicad_mod_parser = require('./kicad/mod_parser')
+
 const kicad_shape_converter = require('./kicad/shape_converter')
 
 const footprint_types = require('./footprints')
 const template_types = require('./templates')
+const { fetchAndCache } = require('./kicad/mod_parser');
 
 exports.inject_footprint = (name, fp) => {
     footprint_types[name] = fp
@@ -21,7 +23,7 @@ exports.inject_template = (name, t) => {
     template_types[name] = t
 }
 
-const footprint_library = kicad_mod_parser.parse();
+// const footprint_library = kicad_mod_parser.parse();
 
 const outline = (config, name, points, outlines, units) => {
 
@@ -39,25 +41,25 @@ const outline = (config, name, points, outlines, units) => {
     }, units]
 } 
 
-const footprint_shape = (name, points, units) => {
+async function footprint_shape(name) {
     console.log("draw footprint: " + name);
-    const jsonObj = footprint_library[name];
+    const jsonObj = await fetchAndCache(name);
 
     console.log(JSON.stringify(jsonObj, null, 2));
     [pathItems, modelItems] = kicad_shape_converter.convert(jsonObj.footprint);
-    return [() => {
+    return () => {
         const res = {
             models: u.deepcopy(modelItems),
             paths: u.deepcopy(pathItems)
         };
-        console.log("res:" + JSON.stringify(res, null, 2));
+        // console.log("res:" + JSON.stringify(res, null, 2));
         const bbox = m.measure.modelExtents(o);
         return [res, bbox]
-    }, units]
+    };
 }
 
 
-exports.parse = (config, points, outlines, units) => {
+exports.parse = async (config, points, outlines, units) => {
             
 
     const pcbs = a.sane(config.pcbs || {}, 'pcbs', 'object')()
@@ -98,7 +100,8 @@ exports.parse = (config, points, outlines, units) => {
             const where = filter(f.where, `${name}.where`, points, units, asym)
             const original_adjust = f.adjust // need to save, so the delete's don't get rid of it below
             const adjust = start => anchor(original_adjust || {}, `${name}.adjust`, points, start)(units)
-            const [shape_maker, shape_units] = footprint_shape(f.what, points, units)
+            const shape_maker = await footprint_shape(f.what)
+            // const shape = await footprint_shape(f.what)
             // delete f.asym
             // delete f.where
             for (const w of where) {
@@ -109,7 +112,7 @@ exports.parse = (config, points, outlines, units) => {
                 shape = point.position(shape) // ...actual positioning happens here
                 const operation = u[a.in(f.preview || 'stack', `${f_name}.operation`, ['add', 'subtract', 'intersect', 'stack'])]
                 results[pcb_name] = operation(results[pcb_name], shape)
-                console.log("preview shape: " + JSON.stringify(shape));
+                // console.log("preview shape: " + JSON.stringify(shape));
             }
             // m.model.simplify(results[pcb_name]);
             m.model.originate(results[pcb_name])
