@@ -2,23 +2,22 @@ const fs = require('fs');
 const m = require('makerjs')
 const path = require('path');
 const axios = require('axios');
-const NodeCache = require('node-cache');
 
-const cache = new NodeCache({ stdTTL: 3600 * 24 * 7});
+const cache = new Map();
+
 
 async function fetchAndCache(footprintName) {
     // 尝试从缓存中获取数据
-    const cachedData = cache.get(footprintName);
-    
-    if (cachedData) {
-        console.log('Returning cached data');
-        return cachedData;
+    if (cache.has(footprintName)) {
+        return cache.get(footprintName);
     }
+    
     
     try {
         // 如果缓存中没有数据，进行HTTP请求
         const url = `https://raw.githubusercontent.com/shiqi-614/ErgoCai.pretty/main/${footprintName}.kicad_mod`;
         const response = await axios.get(url);
+        console.log("get from github:" + response.data);
         const data = parseContent(response.data);
 
         // 将数据保存到缓存中
