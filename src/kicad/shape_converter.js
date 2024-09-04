@@ -12,8 +12,8 @@ class CircleStrategy {
     convert(item) {
         const key = getId('circle', item);
         var circle = new m.paths.Circle([item.at.x, item.at.y*-1], item.size[0]/2);
-        console.log("kicad circle: " + JSON.stringify(item));
-        console.log("convert to makerjs circle: "+ JSON.stringify(circle));
+        // console.log("kicad circle: " + JSON.stringify(item));
+        // console.log("convert to makerjs circle: "+ JSON.stringify(circle));
         return {[key]: circle};
     }
 }
@@ -23,8 +23,8 @@ class OvalStrategy {
         const key = getId('oval', item);
         var oval = new m.models.Oval(item.size[0], item.size[1]);
         oval.origin = [item.at.x - item.size[0]/2, item.at.y * -1 - item.size[0]/2];
-        console.log("kicad oval: " + JSON.stringify(item));
-        console.log("convert to makerjs oval: "+ JSON.stringify(oval));
+        // console.log("kicad oval: " + JSON.stringify(item));
+        // console.log("convert to makerjs oval: "+ JSON.stringify(oval));
         return {[key]: oval};
     }
 }
@@ -44,11 +44,8 @@ class RoundRectStrategy {
             item.roundrect_rratio * Math.min(item.size[0], item.size[1])
         )
         roundrect.origin = [item.at.x - item.size[0]/2, item.at.y * -1 - item.size[1]/2];
-        // m.model.move(roundrect, [item.at.x - item.size[0]/2, item.at.y * -1 - item.size[1]/2]); 
-        // m.model.move(roundrect, [item.at.x, item.at.y * -1]); 
-
-        console.log("kicad roundrect: " + JSON.stringify(item));
-        console.log("convert to makerjs roundrect: "+ JSON.stringify(roundrect));
+        // console.log("kicad roundrect: " + JSON.stringify(item));
+        // console.log("convert to makerjs roundrect: "+ JSON.stringify(roundrect));
         return {[key]: roundrect};
     }
 }
@@ -105,8 +102,8 @@ class ArcStrategy {
             endAngle: endAngle
         };
         var key = getId('arc', item);
-        console.log("kicad arc: " + JSON.stringify(item));
-        console.log("convert to makerjs arc: "+ JSON.stringify(arc));
+        // console.log("kicad arc: " + JSON.stringify(item));
+        // console.log("convert to makerjs arc: "+ JSON.stringify(arc));
         return {[key]: arc};
     }
 }
@@ -119,8 +116,8 @@ class LineStrategy {
             origin: [item.start.x, item.start.y * -1],
             end: [item.end.x, item.end.y * -1]
         }
-        console.log("kicad line: " + JSON.stringify(item));
-        console.log("convert to makerjs line: "+ JSON.stringify(line));
+        // console.log("kicad line: " + JSON.stringify(item));
+        // console.log("convert to makerjs line: "+ JSON.stringify(line));
         return {[key]: line};
     }
 }
@@ -133,8 +130,8 @@ class RectStrategy {
             item.size[1]
         )
         rect.origin = [item.at.x - item.size[0]/2, item.at.y * -1 - item.size[1]/2];
-        console.log("kicad rect: " + JSON.stringify(item));
-        console.log("convert to makerjs rect: "+ JSON.stringify(rect));
+        // console.log("kicad rect: " + JSON.stringify(item));
+        // console.log("convert to makerjs rect: "+ JSON.stringify(rect));
         return {[key]: rect};
     }
 }

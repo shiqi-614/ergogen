@@ -45,7 +45,7 @@ async function footprint_shape(name) {
     console.log("draw footprint: " + name);
     const jsonObj = await fetchAndCache(name);
 
-    console.log(JSON.stringify(jsonObj, null, 2));
+    // console.log(JSON.stringify(jsonObj, null, 2));
     let [pathItems, modelItems] = kicad_shape_converter.convert(jsonObj.footprint);
     return () => {
         const res = {
