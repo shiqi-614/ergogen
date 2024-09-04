@@ -7,13 +7,13 @@ const o = require('./operation')
 const prep = require('./prepare')
 const anchor = require('./anchor').parse
 const filter = require('./filter').parse
-// const kicad_mod_parser = require('./kicad/mod_parser')
 
-const kicad_shape_converter = require('./kicad/shape_converter')
 
 const footprint_types = require('./footprints')
 const template_types = require('./templates')
-const { fetchAndCache } = require('./kicad/mod_parser');
+
+const { fetchAndCache } = require('./kicad/mod_github_fetcher');
+const kicad_shape_converter = require('./kicad/shape_converter')
 
 exports.inject_footprint = (name, fp) => {
     footprint_types[name] = fp
@@ -46,7 +46,7 @@ async function footprint_shape(name) {
     const jsonObj = await fetchAndCache(name);
 
     console.log(JSON.stringify(jsonObj, null, 2));
-    [pathItems, modelItems] = kicad_shape_converter.convert(jsonObj.footprint);
+    let [pathItems, modelItems] = kicad_shape_converter.convert(jsonObj.footprint);
     return () => {
         const res = {
             models: u.deepcopy(modelItems),

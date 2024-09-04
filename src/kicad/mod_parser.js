@@ -1,108 +1,15 @@
-const fs = require('fs');
-const m = require('makerjs')
-const path = require('path');
-const axios = require('axios');
-
-const cache = new Map();
-
-
-async function fetchAndCache(footprintName) {
-    // 尝试从缓存中获取数据
-    if (cache.has(footprintName)) {
-        return cache.get(footprintName);
-    }
-    
-    
-    try {
-        // 如果缓存中没有数据，进行HTTP请求
-        const url = `https://raw.githubusercontent.com/shiqi-614/ErgoCai.pretty/main/${footprintName}.kicad_mod`;
-        const response = await axios.get(url);
-        console.log("get from github:" + response.data);
-        const data = parseContent(response.data);
-
-        // 将数据保存到缓存中
-        cache.set(footprintName, data);
-        console.log('Fetched and cached data');
-        
-        return data;
-    } catch (error) {
-        console.error('Error fetching data:', error);
-        throw error;
-    }
-}
 
 const listSet = new Set([
     'fp_line',
     'fp_arc',
+    'fp_circle',
     'pad',
     'property'
 ]);
 
-// 递归遍历目录
-function findKicadModFiles(dir, fileList = []) {
-    const files = fs.readdirSync(dir);
 
-    files.forEach(file => {
-        const filePath = path.join(dir, file);
-        const stats = fs.statSync(filePath);
+module.exports = { parseContent };
 
-        if (stats.isDirectory()) {
-            findKicadModFiles(filePath, fileList); // 递归处理子目录
-        } else if (path.extname(file) === '.kicad_mod') {
-            fileList.push(filePath); // 找到.kicad_mod文件
-        }
-    });
-
-    return fileList;
-}
-
-// 将解析后的JSON内容保存到 .kicad_mod 文件所在目录的 json 文件夹
-function saveJsonContent(filePath, jsonContent) {
-    const dirPath = path.dirname(filePath);
-    const jsonDir = path.join(dirPath, 'json');
-
-    if (!fs.existsSync(jsonDir)) {
-        fs.mkdirSync(jsonDir); // 如果json文件夹不存在，则创建它
-    }
-
-    const fileName = path.basename(filePath, '.kicad_mod') + '.json';
-    const jsonFilePath = path.join(jsonDir, fileName);
-
-    console.log("json file: " + jsonFilePath);
-    fs.writeFileSync(jsonFilePath, JSON.stringify(jsonContent, null, 2), 'utf-8');
-}
-
-
-module.exports = { fetchAndCache };
-
-// exports.parse = () => {
-
-    // const targetDir = path.join(__dirname, '/../footprints'); // 替换为你的目标目录
-    // const kicadModFiles = findKicadModFiles(targetDir);
-    // console.log('Found .kicad_mod files:');
-    // console.log(kicadModFiles);
-
-    // const result = {};
-    // kicadModFiles.forEach(filePath => {
-        // try {
-            // console.log("parsing file: " + filePath);
-            // const content = fs.readFileSync(filePath, 'utf-8');
-            // const jsonContent = parseContent(content);
-            // const fileName = path.parse(filePath).name;
-            // result[fileName] = jsonContent;
-            // // saveJsonContent(filePath, jsonContent);
-        // } catch (e) {
-            // console.log("cannot handle file: " + filePath);
-            // console.log(e);
-        // }
-    // });
-
-    // // for (var key in result) {
-        // // console.log(key);
-    // // }
-
-    // return result;
-// };
 
 function parseContent(content) {
     const result = {};
@@ -124,6 +31,7 @@ function parseContent(content) {
         } else {
             if (char === '(') {
                 if (currentContent.trim()) {
+                    // console.log("currentContent: " + currentContent);
                     const section  = parseSection(currentContent);
                     if (section) {
                         const {key, data} = section;
@@ -140,6 +48,7 @@ function parseContent(content) {
                             // console.log(JSON.stringify(curObj));
                             curObj[key] = data;
                         }
+                        // console.log("cur data1: " + JSON.stringify(data));
                         curObj = data;
                     }
                 }
@@ -150,20 +59,24 @@ function parseContent(content) {
                 if (currentContent.trim()) {
                     const section  = parseSection(currentContent);
                     if (section) {
-                        const {key, data} = section;
+                        let {key, data} = section;
+                        // console.log("add ");
+                        // console.log("key:" + key+ " dat:" + JSON.stringify(data, null, 2));
+                        // console.log("curObj" + JSON.stringify(curObj, null, 2));
                         curObj[key] = data;
                     }
-                    // console.log("add ");
-                    // console.log("key:" + key+ " obj:" + JSON.stringify(data, null, 2));
-                    // console.log("curObj" + JSON.stringify(curObj, null, 2));
                 } else {
-                    [key, data] =  contentObjStack.pop();
-                    // console.log("pop");
-                    // console.log("key:" + key+ " obj:" + JSON.stringify(data, null, 2));
-                    [key, data] = contentObjStack[contentObjStack.length - 1];
-                    // console.log("cur");
-                    // console.log("key:" + key+ " obj:" + JSON.stringify(data, null, 2));
-                    curObj = data;
+                    if (contentObjStack.length > 0) {
+                        let [key, data] =  contentObjStack.pop();
+                        // console.log("pop");
+                        // console.log("key:" + key+ " obj:" + JSON.stringify(data, null, 2));
+                        [key, data] = contentObjStack[contentObjStack.length - 1];
+                        // console.log("cur");
+                        // console.log("key:" + key+ " obj:" + JSON.stringify(data, null, 2));
+                        
+                        // console.log("cur data2: " + JSON.stringify(data));
+                        curObj = data;
+                    }
                 }
                 currentContent = '';
             } else {
@@ -192,6 +105,7 @@ function parseSection(section) {
             case 'start':
             case 'end':
             case 'at':
+            case 'center':
                 data = parseCoordinates(section);
                 return { key, data};
             case 'size':
@@ -206,6 +120,7 @@ function parseSection(section) {
             case 'effects':
             case 'fp_line':
             case 'fp_arc':
+            case 'fp_circle':
             case 'scale':
             case 'rotate':
             case 'font':
