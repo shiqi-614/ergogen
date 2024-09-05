@@ -8,6 +8,17 @@ function getId(prefix, item) {
     return prefix + '-' + (item.uuid || item.tstamp || ++idx);
 }
 
+class FpCircleStrategy {
+    convert(item) {
+        const key = getId('fpCircle', item);
+        const radius = Math.sqrt(Math.pow(item.center.x - item.end.x, 2) + Math.pow(item.center.y - item.end.y, 2));
+        var circle = new m.paths.Circle([item.center.x, item.center.y*-1], radius);
+        // console.log("kicad fp circle: " + JSON.stringify(item));
+        // console.log("convert to makerjs circle: "+ JSON.stringify(circle));
+        return {[key]: circle};
+    }
+}
+
 class CircleStrategy {
     convert(item) {
         const key = getId('circle', item);
@@ -145,6 +156,7 @@ class ShapeConverter {
             'line': new LineStrategy(),
             'arc': new ArcStrategy(),
             'rect': new RectStrategy(),
+            'fp_circle': new FpCircleStrategy(),
             'oval': new OvalStrategy()
         };
     }
@@ -181,6 +193,12 @@ exports.convert = (footprint) => {
             .filter((item) => layerCheck(item))
             .flatMap((item) => shape_converter.convert(item, 'line'));
         allItems = Object.assign(allItems, ...line_list);
+    }
+    if (footprint.fp_circle) {
+        const fp_circle_list = footprint.fp_circle
+            .filter((item) => layerCheck(item))
+            .flatMap((item) => shape_converter.convert(item, 'fp_circle'));
+        allItems = Object.assign(allItems, ...fp_circle_list);
     }
     if (footprint.pad) {
         const pad_list = footprint.pad

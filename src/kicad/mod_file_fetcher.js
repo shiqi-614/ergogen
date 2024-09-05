@@ -43,7 +43,7 @@ function saveJsonContent(filePath, jsonContent) {
 console.log('Found .kicad_mod files:');
 // console.log(kicadModFiles);
 //
-const kicadModFiles = ["/Users/jinsongc/Documents/KiCad/8.0/footprints/ErgoCai.pretty/LED_RGB_5050-6.kicad_mod"];
+const kicadModFiles = ["/Users/jinsongc/Development/ErgoCai.pretty/LED_RGB_5050-6.kicad_mod"];
 
 kicadModFiles.forEach(filePath => {
     try {
