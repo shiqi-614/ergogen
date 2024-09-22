@@ -97,6 +97,8 @@ const process = async (raw, debug=false, logger=()=>{}) => {
         results.pcbs_preview[pcb_name] = io.twodee(pcb_text, debug);
         empty = false
     }
+    results.points = points
+    results.demo = io.twodee(points_lib.visualize(points, units), debug)
 
     if (!debug && empty) {
         logger('Output would be empty, rerunning in debug mode...')

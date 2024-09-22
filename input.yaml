@@ -41,33 +41,17 @@ points:
     thumbs:
       anchor:
         ref: matrix_inner_mod
-        shift: [0 + 8, -1kx - 4]
+        shift: [0 + 7.2 +1kx, -1.6kx-1.2]
         rotate: -25
       columns:
-        left:
-          key.column_net: C1
-          rows:
-            down:
-              row_net: R5
-              width: 2kx
-              rotate: -90
-              shift: [0kx, 0.5kx]
-            middle.skip: true
-            up.skip: true
         middle:
           key.column_net: C2
           rows:
-            down:
-              row_net: R5
-              width: 2kx
-              rotate: -90
-              shift: [0kx, 0.5kx]    
+            down.skip: true
             middle.skip: true
             up: 
               column_net: C5 
-              row_net: R4
-              rotate: 90
-              shift: [-1.6kx, -2.1kx]       
+              row_net: R4 
         right:
           rows:
             up:
@@ -83,6 +67,24 @@ points:
         down:
         middle:
         up:
+    thumbs2:
+      anchor:
+        ref: matrix_inner_mod
+        shift: [0 + 8, -1kx - 3.4]
+        rotate: -25
+      columns:
+        left:
+          key.column_net: C1
+        middle:
+          key.column_net: C2
+        
+      rows:
+        down:
+          row_net: R5
+          width: 2kx
+          rotate: -90
+          shift: [0kx, 0.5kx]
+        
 units:
   kx: cx
   ky: cy
@@ -138,21 +140,20 @@ pcbs:
       main:
         outline: board
     footprints:
-      keys:
+      keys1:
         what: SW_Hotswap_Kailh_MX_1.00u
-        where: true
-        params:
-          from: "{{row_net}}"
-          to: "{{column_net}}"
-          keycaps: true
+        where: /matrix_.*/
+      keys2:
+        what: SW_Hotswap_Kailh_MX_1.00u
+        where: /thumbs_.*/
+      keys3:
+        what: SW_Hotswap_Kailh_MX_2.00u
+        where: /thumbs2_.*/
       diodes:
         what: Diode-Dual
         where: true
         adjust:
           shift: [0, -8.4]
-        params:
-          from: "{{row_net}}"
-          to: "{{colrow}}"  
       battery:
         what: Battery_Holder_18650_Nickel
         where:
@@ -172,13 +173,13 @@ pcbs:
         what: LED_0603_1608Metric
         where:
           ref.aggregate.parts: [matrix_inner_num]
-          shift: [10,15]
+          shift: [12.5,15]
           rotate: 90
       red_led:
         what: LED_0603_1608Metric
         where:
           ref.aggregate.parts: [matrix_inner_num]
-          shift: [30,15]
+          shift: [28.5,15]
           rotate: 90
       usb_c:
         what: USB_C_Receptacle_HRO_TYPE-C-31-M-12
@@ -203,5 +204,4 @@ pcbs:
         where:
           ref.aggregate.parts: [matrix_inner_home]
           shift: [30, -5]
-      
-
+    

@@ -13,6 +13,7 @@ const footprint_types = require('./footprints')
 const template_types = require('./templates')
 
 const { fetchAndCache } = require('./kicad/mod_github_fetcher');
+const { fetchFootprintTypes } = require('./kicad/footprint_types');
 const kicad_shape_converter = require('./kicad/shape_converter')
 
 exports.inject_footprint = (name, fp) => {
@@ -62,6 +63,7 @@ async function footprint_shape(name) {
 exports.parse = async (config, points, outlines, units) => {
             
 
+    const footprintTypes = await fetchFootprintTypes();
     const pcbs = a.sane(config.pcbs || {}, 'pcbs', 'object')()
     const results = {}
 
@@ -90,6 +92,9 @@ exports.parse = async (config, points, outlines, units) => {
         if (a.type(pcb_config.footprints)() == 'array') {
             pcb_config.footprints = {...pcb_config.footprints}
         }
+        console.log("types");
+        console.log(JSON.stringify(footprintTypes));
+
         const footprints_config = a.sane(pcb_config.footprints || {}, `pcbs.${pcb_name}.footprints`, 'object')()
         for (const [f_name, f] of Object.entries(footprints_config)) {
             const name = `pcbs.${pcb_name}.footprints.${f_name}`
@@ -105,6 +110,13 @@ exports.parse = async (config, points, outlines, units) => {
             // delete f.asym
             // delete f.where
             for (const w of where) {
+                if (!w.meta.footprints) {
+                    w.meta.footprints = {};
+                }
+                if (f.what in footprintTypes) {
+                    const type = footprintTypes[f.what];
+                    w.meta.footprints[type] = f.what;
+                }
                 const point = adjust(w.clone())
                 // console.log("preview point: " + JSON.stringify(point));
                 let [shape, bbox] = shape_maker(point) // point is passed for mirroring metadata only...
