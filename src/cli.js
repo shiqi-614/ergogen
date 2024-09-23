@@ -199,6 +199,13 @@ if (results.pcbs_preview) {
     }
 }
 
+if (results.zipBuffer) {
+    console.log("save kicad project");
+    const abs = path.join(args.o, 'ergocai.zip')
+    fs.writeFileSync(abs, results.zipBuffer);
+
+}
+
 // goodbye
 
 console.log('Done.')

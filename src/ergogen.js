@@ -1,14 +1,20 @@
 const u = require('./utils')
 const io = require('./io')
 const prepare = require('./prepare')
+const yaml = require('js-yaml')
 const units_lib = require('./units')
 const points_lib = require('./points')
 const outlines_lib = require('./outlines')
 const cases_lib = require('./cases')
 const pcbs_lib = require('./pcbs')
 const pcbs_preview_lib = require('./pcbs_preview')
+const fs = require('fs');
 
 const version = require('../package.json').version
+
+function isNode() {
+    return typeof process !== 'undefined' && process.versions != null && process.versions.node != null;
+}
 
 const process = async (raw, debug=false, logger=()=>{}) => {
 
@@ -99,6 +105,36 @@ const process = async (raw, debug=false, logger=()=>{}) => {
     }
     results.points = points
     results.demo = io.twodee(points_lib.visualize(points, units), debug)
+
+    logger("Create KiCad Project...")
+
+    try {
+        const response = await fetch('http://127.0.0.1:5000/generate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-yaml',
+            },
+            body: yaml.dump(points),
+        });
+
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+
+
+        const blob = await response.blob();
+        // const buffer = await blob.text();
+        const arrayBuffer = await blob.arrayBuffer();
+        if (isNode()) {
+            const buffer = Buffer.from(arrayBuffer); // Convert ArrayBuffer to Node.js Buffer
+            results.zipBuffer = buffer;
+        } else {
+            const buffer = new Uint8Array(arrayBuffer);
+            results.zipBuffer = buffer;
+        }
+    } catch (error) {
+        console.error('There was a problem with the fetch operation:', error);
+    }
 
     if (!debug && empty) {
         logger('Output would be empty, rerunning in debug mode...')
