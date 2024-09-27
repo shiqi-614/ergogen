@@ -9,6 +9,11 @@ const cases_lib = require('./cases')
 const pcbs_lib = require('./pcbs')
 const pcbs_preview_lib = require('./pcbs_preview')
 const fs = require('fs');
+// const fetch = require('node-fetch');
+// import fetch from 'node-fetch';
+const axios = require('axios');
+
+
 
 const version = require('../package.json').version
 
@@ -109,31 +114,19 @@ const process = async (raw, debug=false, logger=()=>{}) => {
     logger("Creating KiCad Project...")
 
     try {
-        const response = await fetch('http://127.0.0.1:5000/generate', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-yaml',
-            },
-            body: yaml.dump(points),
-        });
+        const response = await axios.post('http://127.0.0.1:5001/generate', 
+            points,
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            }
+        );
+        // console.log('Response:', response.data);
+        const buffer = Buffer.from(response.data); // Convert ArrayBuffer to Node.js Buffer
+        results.zipBuffer = buffer;
 
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-
-
-        const blob = await response.blob();
-        // const buffer = await blob.text();
-        const arrayBuffer = await blob.arrayBuffer();
-        if (isNode()) {
-            const buffer = Buffer.from(arrayBuffer); // Convert ArrayBuffer to Node.js Buffer
-            results.zipBuffer = buffer;
-        } else {
-            const buffer = new Uint8Array(arrayBuffer);
-            results.zipBuffer = buffer;
-        }
-
-    logger("Create KiCad Project without error.")
+        logger("Create KiCad Project without error.")
     } catch (error) {
         console.error('There was a problem with the fetch operation:', error);
     }
