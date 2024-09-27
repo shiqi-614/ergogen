@@ -106,7 +106,7 @@ const process = async (raw, debug=false, logger=()=>{}) => {
     results.points = points
     results.demo = io.twodee(points_lib.visualize(points, units), debug)
 
-    logger("Create KiCad Project...")
+    logger("Creating KiCad Project...")
 
     try {
         const response = await fetch('http://127.0.0.1:5000/generate', {
@@ -132,6 +132,8 @@ const process = async (raw, debug=false, logger=()=>{}) => {
             const buffer = new Uint8Array(arrayBuffer);
             results.zipBuffer = buffer;
         }
+
+    logger("Create KiCad Project without error.")
     } catch (error) {
         console.error('There was a problem with the fetch operation:', error);
     }

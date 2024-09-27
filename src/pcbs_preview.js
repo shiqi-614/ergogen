@@ -118,7 +118,7 @@ exports.parse = async (config, points, outlines, units) => {
                     w.meta.footprints[type] = f.what;
                 }
                 const point = adjust(w.clone())
-                // console.log("preview point: " + JSON.stringify(point));
+                console.log("preview point: " + JSON.stringify(point));
                 let [shape, bbox] = shape_maker(point) // point is passed for mirroring metadata only...
                 // console.log("share: " + JSON.stringify(shape, null, 2));
                 shape = point.position(shape) // ...actual positioning happens here
