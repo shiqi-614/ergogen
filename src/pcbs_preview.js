@@ -104,26 +104,28 @@ exports.parse = async (config, points, outlines, units) => {
             const where = filter(f.where, `${name}.where`, points, units, asym)
             const original_adjust = f.adjust // need to save, so the delete's don't get rid of it below
             const adjust = start => anchor(original_adjust || {}, `${name}.adjust`, points, start)(units)
-            const shape_maker = await footprint_shape(f.what)
-            // const shape = await footprint_shape(f.what)
-            // delete f.asym
-            // delete f.where
-            for (const w of where) {
-                if (!w.meta.footprints) {
-                    w.meta.footprints = {};
-                }
-                if (f.what in footprintTypes) {
-                    const type = footprintTypes[f.what];
-                    w.meta.footprints[type] = f.what;
-                }
-                const point = adjust(w.clone())
-                let [shape, bbox] = shape_maker(point) // point is passed for mirroring metadata only...
-                // console.log("share: " + JSON.stringify(shape, null, 2));
-                shape = point.position(shape) // ...actual positioning happens here
-                const operation = u[a.in(f.preview || 'stack', `${f_name}.operation`, ['add', 'subtract', 'intersect', 'stack'])]
-                results[pcb_name] = operation(results[pcb_name], shape)
-                // console.log("preview shape: " + JSON.stringify(shape));
+            try {
+                const shape_maker = await footprint_shape(f.what)
+                for (const w of where) {
+                    if (!w.meta.footprints) {
+                        w.meta.footprints = {};
+                    }
+                    if (f.what in footprintTypes) {
+                        const type = footprintTypes[f.what];
+                        w.meta.footprints[type] = f.what;
+                    }
+                    const point = adjust(w.clone())
+                    let [shape, bbox] = shape_maker(point) // point is passed for mirroring metadata only...
+                    // console.log("share: " + JSON.stringify(shape, null, 2));
+                    shape = point.position(shape) // ...actual positioning happens here
+                    const operation = u[a.in(f.preview || 'stack', `${f_name}.operation`, ['add', 'subtract', 'intersect', 'stack'])]
+                    results[pcb_name] = operation(results[pcb_name], shape)
+                    // console.log("preview shape: " + JSON.stringify(shape));
+                }   
+            } catch (error) {
+                console.error('Error place footprint:', error);
             }
+
             // m.model.simplify(results[pcb_name]);
             m.model.originate(results[pcb_name])
             // console.log("final PCB:" + JSON.stringify(results[pcb_name]));
