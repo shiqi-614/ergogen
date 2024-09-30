@@ -113,11 +113,14 @@ const process = async (raw, debug=false, logger=()=>{}) => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
+                responseType: 'arraybuffer'
             }
         );
         // console.log('Response:', response.data);
-        const buffer = Buffer.from(response.data); // Convert ArrayBuffer to Node.js Buffer
-        results.zipBuffer = buffer;
+        // const buffer = Buffer.from(response.data); // Convert ArrayBuffer to Node.js Buffer
+        const zipBuffer = Buffer.from(response.data, 'binary').toString('base64');
+        results.zipBuffer = zipBuffer;
+        // fs.writeFileSync("/Users/jinsongc/Downloads/test.zip", response.data);
 
         logger("Create KiCad Project without error.")
     } catch (error) {
