@@ -1,0 +1,3 @@
+[submodule "src/kicad/ErgoCai.pretty"]
+	path = src/kicad/ErgoCai.pretty
+	url = https://github.com/shiqi-614/ErgoCai.pretty.git

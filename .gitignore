@@ -123,3 +123,5 @@ dist
 # Project specific
 output
 temp\b
+
+**tags

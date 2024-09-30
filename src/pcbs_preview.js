@@ -12,7 +12,7 @@ const filter = require('./filter').parse
 const footprint_types = require('./footprints')
 const template_types = require('./templates')
 
-const { fetchAndCache } = require('./kicad/mod_github_fetcher');
+const { fetchKicadMod } = require('./kicad/mod_fetcher');
 const { fetchFootprintTypes } = require('./kicad/footprint_types');
 const kicad_shape_converter = require('./kicad/shape_converter')
 
@@ -44,7 +44,7 @@ const outline = (config, name, points, outlines, units) => {
 
 async function footprint_shape(name) {
     console.log("draw footprint: " + name);
-    const jsonObj = await fetchAndCache(name);
+    const jsonObj = await fetchKicadMod(name);
 
     // console.log(JSON.stringify(jsonObj, null, 2));
     let [pathItems, modelItems] = kicad_shape_converter.convert(jsonObj.footprint);
