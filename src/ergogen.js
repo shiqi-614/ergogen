@@ -107,21 +107,24 @@ const process = async (raw, debug=false, logger=()=>{}) => {
     logger("Creating KiCad Project...")
 
     try {
-        const response = await axios.post('http://127.0.0.1:5001/generate', 
-            points,
-            {
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                responseType: 'arraybuffer'
-            }
-        );
-        // console.log('Response:', response.data);
-        // const buffer = Buffer.from(response.data); // Convert ArrayBuffer to Node.js Buffer
-        const zipBuffer = Buffer.from(response.data, 'binary').toString('base64');
-        results.zipBuffer = zipBuffer;
-        // fs.writeFileSync("/Users/jinsongc/Downloads/test.zip", response.data);
 
+        results.kicad = {};
+        for (const [pcb_name, pcb_config] of Object.entries(config.pcbs)) {
+            const response = await axios.post('http://127.0.0.1:5001/generate', 
+                {
+                    "points": points,
+                    "name": pcb_name,
+                },
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    responseType: 'arraybuffer'
+                }
+            );
+            const zipBuffer = Buffer.from(response.data, 'binary').toString('base64');
+            results.kicad[pcb_name] = zipBuffer;
+        }
         logger("Create KiCad Project without error.")
     } catch (error) {
         console.error('There was a problem with the fetch operation:', error);

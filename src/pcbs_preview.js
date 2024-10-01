@@ -100,11 +100,11 @@ exports.parse = async (config, points, outlines, units) => {
             const name = `pcbs.${pcb_name}.footprints.${f_name}`
             console.log("footprint f: " + JSON.stringify(f));
             a.sane(f, name, 'object')()
-            const asym = a.asym(f.asym || 'source', `${name}.asym`)
-            const where = filter(f.where, `${name}.where`, points, units, asym)
-            const original_adjust = f.adjust // need to save, so the delete's don't get rid of it below
-            const adjust = start => anchor(original_adjust || {}, `${name}.adjust`, points, start)(units)
             try {
+                const asym = a.asym(f.asym || 'source', `${name}.asym`)
+                const where = filter(f.where, `${name}.where`, points, units, asym)
+                const original_adjust = f.adjust // need to save, so the delete's don't get rid of it below
+                const adjust = start => anchor(original_adjust || {}, `${name}.adjust`, points, start)(units)
                 const shape_maker = await footprint_shape(f.what)
                 for (const w of where) {
                     if (!w.meta.footprints) {
@@ -117,6 +117,11 @@ exports.parse = async (config, points, outlines, units) => {
                     const point = adjust(w.clone())
                     let [shape, bbox] = shape_maker(point) // point is passed for mirroring metadata only...
                     // console.log("share: " + JSON.stringify(shape, null, 2));
+                    if (f.side == "Back") {
+                        shape.layer = "olive";
+                    } else {
+                        shape.layer = "aqua";
+                    }
                     shape = point.position(shape) // ...actual positioning happens here
                     const operation = u[a.in(f.preview || 'stack', `${f_name}.operation`, ['add', 'subtract', 'intersect', 'stack'])]
                     results[pcb_name] = operation(results[pcb_name], shape)

@@ -86,22 +86,31 @@ exports.parse = async (config, points, outlines, units) => {
             const name = `pcbs.${pcb_name}.footprints.${f_name}`
             console.log("footprint name: " + name);
             a.sane(f, name, 'object')()
-            const asym = a.asym(f.asym || 'source', `${name}.asym`)
-            const where = filter(f.where, `${name}.where`, points, units, asym)
-            const original_adjust = f.adjust // need to save, so the delete's don't get rid of it below
-            const adjust = start => anchor(original_adjust || {}, `${name}.adjust`, points, start)(units)
-            for (const w of where) {
-                const point = adjust(w.clone())
-                point.meta.footprint = f.what
-                var type = "others";
-                if (f.what in footprintTypes) {
-                    type = footprintTypes[f.what];
-                } 
-                if (!results[pcb_name][type]) {
-                    results[pcb_name][type] = [];
+            try {
+                const asym = a.asym(f.asym || 'source', `${name}.asym`)
+                const where = filter(f.where, `${name}.where`, points, units, asym)
+                const original_adjust = f.adjust // need to save, so the delete's don't get rid of it below
+                const adjust = start => anchor(original_adjust || {}, `${name}.adjust`, points, start)(units)
+                for (const w of where) {
+                    const point = adjust(w.clone())
+                    point.meta.footprint = f.what;
+                    point.meta.name = f_name;
+                    point.side = "Front";
+                    if (f.side) {
+                        point.side = f.side;
+                    }
+                    var type = "others";
+                    if (f.what in footprintTypes) {
+                        type = footprintTypes[f.what];
+                    } 
+                    if (!results[pcb_name][type]) {
+                        results[pcb_name][type] = [];
+                    }
+                    console.log(`add point to ${pcb_name} ${type}`)
+                    results[pcb_name][type].push(point);
                 }
-                console.log(`add point to ${pcb_name} ${type}`)
-                results[pcb_name][type].push(point);
+            } catch (error) {
+                console.error('Error place footprint:', error);
             }
         }
     }
