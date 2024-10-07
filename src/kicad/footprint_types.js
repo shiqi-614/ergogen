@@ -1,8 +1,5 @@
 const fs = require('fs');
-const path = require('path');
 const axios = require('axios');
-
-const modFolderPath = path.join(__dirname, './ErgoCai.pretty');
 
 function transfer(data) {
     const transformedDict = {};
@@ -20,6 +17,8 @@ function transfer(data) {
 
 const fetchFootprintTypes = async () => {
     try {
+        const path = require('path');
+        const modFolderPath = path.join(__dirname, './ErgoCai.pretty');
         const filePath = path.join(modFolderPath, 'footprintTypes.json');
         const content = fs.readFileSync(filePath, 'utf-8');
 
@@ -29,8 +28,6 @@ const fetchFootprintTypes = async () => {
         console.error('Error fetching the JSON from local file:', error);
     }
     try {
-        const filePath = path.join(modFolderPath, 'footprintTypes.json');
-        const content = fs.readFileSync(filePath, 'utf-8');
 
         const response = await axios.get('https://raw.githubusercontent.com/shiqi-614/ErgoCai.pretty/main/footprintTypes.json');
         const data = response.data;
