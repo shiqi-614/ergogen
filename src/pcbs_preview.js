@@ -92,13 +92,13 @@ exports.parse = async (config, points, outlines, units) => {
         if (a.type(pcb_config.footprints)() == 'array') {
             pcb_config.footprints = {...pcb_config.footprints}
         }
-        console.log("types");
-        console.log(JSON.stringify(footprintTypes));
+        // console.log("types");
+        // console.log(JSON.stringify(footprintTypes));
 
         const footprints_config = a.sane(pcb_config.footprints || {}, `pcbs.${pcb_name}.footprints`, 'object')()
         for (const [f_name, f] of Object.entries(footprints_config)) {
             const name = `pcbs.${pcb_name}.footprints.${f_name}`
-            console.log("footprint f: " + JSON.stringify(f));
+            // console.log("footprint f: " + JSON.stringify(f));
             a.sane(f, name, 'object')()
             try {
                 const asym = a.asym(f.asym || 'source', `${name}.asym`)

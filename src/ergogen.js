@@ -104,30 +104,31 @@ const process = async (raw, debug=false, logger=()=>{}) => {
     results.points = points
     results.demo = io.twodee(points_lib.visualize(points, units), debug)
 
-    logger("Creating KiCad Project...")
+    if (config?.is_preview === false) {
+        logger("Creating KiCad Project...")
 
-    try {
-
-        results.kicad = {};
-        for (const [pcb_name, pcb_config] of Object.entries(config.pcbs)) {
-            const response = await axios.post('http://127.0.0.1:5001/generate', 
-                {
-                    "points": points,
-                    "name": pcb_name,
-                },
-                {
-                    headers: {
-                        'Content-Type': 'application/json',
+        try {
+            results.kicad = {};
+            for (const [pcb_name, pcb_config] of Object.entries(config.pcbs)) {
+                const response = await axios.post('http://127.0.0.1:5001/generate', 
+                    {
+                        "points": points,
+                        "name": pcb_name,
                     },
-                    responseType: 'arraybuffer'
-                }
-            );
-            const zipBuffer = Buffer.from(response.data, 'binary').toString('base64');
-            results.kicad[pcb_name] = zipBuffer;
+                    {
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        responseType: 'arraybuffer'
+                    }
+                );
+                const zipBuffer = Buffer.from(response.data, 'binary').toString('base64');
+                results.kicad[pcb_name] = zipBuffer;
+            }
+            logger("Create KiCad Project without error.")
+        } catch (error) {
+            console.error('There was a problem with the fetch operation:', error);
         }
-        logger("Create KiCad Project without error.")
-    } catch (error) {
-        console.error('There was a problem with the fetch operation:', error);
     }
 
     if (!debug && empty) {
