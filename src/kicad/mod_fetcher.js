@@ -6,6 +6,8 @@ const { fetchAndCache } = require('./mod_github_fetcher');
 const modFolderPath = path.join(__dirname, './ErgoCai.pretty');
 const kicadMods = new Map();
 
+const isNode = typeof process !== "undefined" && process.versions != null && process.versions.node != null;
+
 // 递归遍历目录
 function findKicadModFilesAndParse() {
     const files = fs.readdirSync(modFolderPath);
@@ -27,14 +29,15 @@ function findKicadModFilesAndParse() {
 }
 
 async function fetchKicadMod(footprint_name) {
-    if (kicadMods.size == 0) {
-        findKicadModFilesAndParse();
+    if (isNode) {
+        if (kicadMods.size == 0) {
+            findKicadModFilesAndParse();
+        }
     }
     
     console.log("try to get footprint: " + footprint_name);
     if (kicadMods.has(footprint_name)) {
         console.log("get data from file: " + footprint_name);
-        
         return kicadMods.get(footprint_name);
     } else {
         return fetchAndCache(footprint_name);
