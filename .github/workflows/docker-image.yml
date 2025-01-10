@@ -3,15 +3,16 @@ name: Docker Image CI
 on:
   push:
     branches: [ "develop" ]
-  pull_request:
-    branches: [ "develop" ]
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: 'Purpose of Run This Workflow?'
+        required: true
+        type: string
 
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
-
     steps:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -25,10 +26,27 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive # 初始化并递归克隆子模块
+          fetch-depth: 0        # 获取完整历史记录（避免子模块的问题）
+      
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
           platforms: linux/amd64
           push: true
+          context: .
           tags: shiqi614/ergogen:latest
 
+      - name: Trigger Deploy Workflow
+        if: ${{ success() }} # 确保只在前面步骤成功时运行
+        env:
+          GITHUB_TOKEN: ${{ secrets.WORKFLOW_TRIGGER_TOKEN }}
+        run: |
+          curl -X POST \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/shiqi-614/ErgogenDocker/dispatches \
+            -d '{"event_type": "trigger-event"}'
