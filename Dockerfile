@@ -4,13 +4,11 @@ WORKDIR /app
 
 COPY . /app
 
-RUN sed -i 's/127\.0\.0\.1/kicadgen/g' ./src/ergogen.js
-
 RUN npm install
 
 EXPOSE 3001
 
-CMD ["node", "src/server.js"]
+CMD ["npm", "run", "start-prod"]
 
 
 # docker build -t ergogen .

@@ -10,6 +10,7 @@ const pcbs_lib = require('./pcbs')
 const pcbs_preview_lib = require('./pcbs_preview')
 const fs = require('fs');
 const axios = require('axios');
+const stage_configs = require('./stage_configs');
 
 
 const version = require('../package.json').version
@@ -109,8 +110,10 @@ const process = async (raw, debug=false, logger=()=>{}) => {
 
         try {
             results.kicad = {};
+
+            console.log(`API URL: ${stage_configs.KICADGEN_API_URL}`);
             for (const [pcb_name, pcb_config] of Object.entries(config.pcbs)) {
-                const response = await axios.post('http://127.0.0.1:5001/generate', 
+                const response = await axios.post(stage_configs.KICADGEN_API_URL, 
                     {
                         "points": points,
                         "name": pcb_name,
