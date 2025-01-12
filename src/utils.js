@@ -134,3 +134,23 @@ const satisfies = exports.satisfies = (current, expected) => {
         )
     )
 }
+
+exports.createDefaultKey = (units) => ({
+    stagger: units.$default_stagger,
+    spread: units.$default_spread,
+    splay: units.$default_splay,
+    origin: [0, 0],
+    orient: 0,
+    shift: [0, 0],
+    rotate: 0,
+    adjust: {},
+    width: units.$default_width,
+    height: units.$default_height,
+    padding: units.$default_padding,
+    autobind: units.$default_autobind,
+    skip: false,
+    asym: 'both',
+    colrow: '{{col.name}}_{{row}}',
+    name: '{{zone.name}}_{{colrow}}',
+});
+

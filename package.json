@@ -2,7 +2,7 @@
     "name": "ergogen",
     "version": "4.1.0",
     "description": "Ergonomic keyboard layout generator",
-    "author": "B\u00e1n D\u00e9nes <mr@zealot.hu>",
+    "author": "Bán Dénes <mr@zealot.hu>",
     "license": "MIT",
     "homepage": "https://ergogen.xyz",
     "repository": "github:ergogen/ergogen",
@@ -19,6 +19,7 @@
     "dependencies": {
         "axios": "^1.7.7",
         "body-parser": "^1.20.3",
+        "chrome-remote-interface": "^0.33.2",
         "cors": "^2.8.5",
         "express": "^4.21.0",
         "fs-extra": "^11.1.0",

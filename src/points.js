@@ -4,193 +4,134 @@ const a = require('./assert')
 const prep = require('./prepare')
 const anchor_lib = require('./anchor')
 
-const push_rotation = exports._push_rotation = (list, angle, origin) => {
-    let candidate = origin
+
+// 通用工具函数
+const ensureObject = (obj, path) => a.sane(obj || {}, path, 'object')();
+const ensureNumber = (val, path, units, defaultValue = 0) =>
+    a.sane(val ?? defaultValue, path, 'number')(units);
+const ensureBoolean = (val, path, defaultValue = false) =>
+    a.sane(val ?? defaultValue, path, 'boolean')();
+
+const pushRotation = (list, angle, origin) => {
+    let candidate = origin;
     for (const r of list) {
-        candidate = m.point.rotate(candidate, r.angle, r.origin)
+        candidate = m.point.rotate(candidate, r.angle, r.origin);
     }
-    list.push({
-        angle: angle,
-        origin: candidate
-    })
-}
+    list.push({ angle, origin: candidate });
+};
 
-const render_zone = exports._render_zone = (zone_name, zone, anchor, global_key, units) => {
+const combineRows = (zoneRows, colRows) =>
+    Object.keys(prep.extend(zoneRows, colRows)).length
+        ? prep.extend(zoneRows, colRows)
+        : { default: {} };
 
-    // zone-wide sanitization
 
-    a.unexpected(zone, `points.zones.${zone_name}`, ['columns', 'rows', 'key'])
-    // the anchor comes from "above", because it needs other zones too (for references)
-    const cols = zone.columns = a.sane(zone.columns || {}, `points.zones.${zone_name}.columns`, 'object')()
-    const zone_wide_rows = a.sane(zone.rows || {}, `points.zones.${zone_name}.rows`, 'object')()
-    for (const [key, val] of Object.entries(zone_wide_rows)) {
-        zone_wide_rows[key] = val || {} // no check yet, as it will be extended later
-    }
-    const zone_wide_key = a.sane(zone.key || {}, `points.zones.${zone_name}.key`, 'object')()
+const extendKeyMetaByPriority = (globalKey, zoneKey, colKey, rowConfig, units) => {
+    const defaultKey = u.createDefaultKey(units);
+    const key = prep.extend(
+        defaultKey,
+        globalKey,
+        zoneKey,
+        colKey,
+        rowConfig || {}
+    );
 
-    // algorithm prep
+    key.stagger = a.sane(key.stagger, `${key.name}.stagger`, 'number')(units)
+    key.spread = a.sane(key.spread, `${key.name}.spread`, 'number')(units)
+    key.splay = a.sane(key.splay, `${key.name}.splay`, 'number')(units)
+    key.origin = a.xy(key.origin, `${key.name}.origin`)(units)
+    key.orient = a.sane(key.orient, `${key.name}.orient`, 'number')(units)
+    key.shift = a.xy(key.shift, `${key.name}.shift`)(units)
+    key.rotate = a.sane(key.rotate, `${key.name}.rotate`, 'number')(units)
+    key.width = a.sane(key.width, `${key.name}.width`, 'number')(units)
+    key.height = a.sane(key.height, `${key.name}.height`, 'number')(units)
+    key.padding = a.sane(key.padding, `${key.name}.padding`, 'number')(units)
+    key.skip = a.sane(key.skip, `${key.name}.skip`, 'boolean')()
+    key.asym = a.asym(key.asym, `${key.name}.asym`)
+    return key;
+};
 
-    const points = {}
-    const rotations = []
-    const zone_anchor = anchor.clone()
-    // transferring the anchor rotation to "real" rotations
-    rotations.push({
-        angle: zone_anchor.r,
-        origin: zone_anchor.p
-    })
-    // and now clear it from the anchor so that we don't apply it twice
-    zone_anchor.r = 0
+const fillNameByTemplate = (key, zone, zoneName, col, colName, row, units) => {
+    // Set metadata
+    key.zone = zone;
+    key.zone.name = zoneName;
+    key.col = col;
+    key.col.name = colName;
+    key.row = row;
+    key.column_name = colName;
+    key.row_name = row;
 
-    // column layout
-
-    if (!Object.keys(cols).length) {
-        cols.default = {}
-    }
-    let first_col = true
-    for (let [col_name, col] of Object.entries(cols)) {
-
-        // column-level sanitization
-
-        col = col || {}
-
-        a.unexpected(
-            col,
-            `points.zones.${zone_name}.columns.${col_name}`,
-            ['rows', 'key']
-        )
-        col.rows = a.sane(
-            col.rows || {},
-            `points.zones.${zone_name}.columns.${col_name}.rows`,
-            'object'
-        )()
-        for (const [key, val] of Object.entries(col.rows)) {
-            col.rows[key] = val || {} // again, no check yet, as it will be extended later
+    // Process template strings
+    Object.entries(key).forEach(([k, v]) => {
+        if (a.type(v)(units) === 'string') {
+            key[k] = u.template(v, key);
         }
-        col.key = a.sane(
-            col.key || {},
-            `points.zones.${zone_name}.columns.${col_name}.key`,
-            'object'
-        )()
+    });
+};
 
-        // combining row data from zone-wide defs and col-specific defs
+const renderZone = (zoneName, zone, zoneAnchor, globalKey, units) => {
+    const cols = ensureObject(zone.columns, `points.zones.${zoneName}.columns`);
+    const zoneRows = ensureObject(zone.rows, `points.zones.${zoneName}.rows`);
+    const zoneKey = ensureObject(zone.key, `points.zones.${zoneName}.key`);
 
-        const actual_rows = Object.keys(prep.extend(zone_wide_rows, col.rows))
-        if (!actual_rows.length) {
-            actual_rows.push('default')
-        }
+    const points = {};
+    const rotations = [{ angle: zoneAnchor.r, origin: zoneAnchor.p }];
+    zoneAnchor.r = 0; // Clear rotation
 
-        // getting key config through the 5-level extension
 
-        const keys = []
-        const default_key = {
-            stagger: units.$default_stagger,
-            spread: units.$default_spread,
-            splay: units.$default_splay,
-            origin: [0, 0],
-            orient: 0,
-            shift: [0, 0],
-            rotate: 0,
-            adjust: {},
-            width: units.$default_width,
-            height: units.$default_height,
-            padding: units.$default_padding,
-            autobind: units.$default_autobind,
-            skip: false,
-            asym: 'both',
-            colrow: '{{col.name}}_{{row}}',
-            name: '{{zone.name}}_{{colrow}}'
-        }
-        for (const row of actual_rows) {
-            const key = prep.extend(
-                default_key,
-                global_key,
-                zone_wide_key,
+    let firstCol = true;
+    Object.entries(cols).forEach(([colName, col]) => {
+        col = ensureObject(col, `points.zones.${zoneName}.columns.${colName}`);
+        const combinedRows = combineRows(zoneRows, col.rows);
+        const keys = Object.keys(combinedRows).map(row => {
+            const key = extendKeyMetaByPriority( 
+                globalKey,
+                zoneKey,
                 col.key,
-                zone_wide_rows[row] || {},
-                col.rows[row] || {}
-            )
+                combinedRows[row],
+                units
+            );
+            fillNameByTemplate(key, zone, zoneName, col, colName, row, units);
+            return key;
+        });
 
-            key.zone = zone
-            key.zone.name = zone_name
-            key.col = col
-            key.col.name = col_name
-            key.row = row
-
-            key.stagger = a.sane(key.stagger, `${key.name}.stagger`, 'number')(units)
-            key.spread = a.sane(key.spread, `${key.name}.spread`, 'number')(units)
-            key.splay = a.sane(key.splay, `${key.name}.splay`, 'number')(units)
-            key.origin = a.xy(key.origin, `${key.name}.origin`)(units)
-            key.orient = a.sane(key.orient, `${key.name}.orient`, 'number')(units)
-            key.shift = a.xy(key.shift, `${key.name}.shift`)(units)
-            key.rotate = a.sane(key.rotate, `${key.name}.rotate`, 'number')(units)
-            key.width = a.sane(key.width, `${key.name}.width`, 'number')(units)
-            key.height = a.sane(key.height, `${key.name}.height`, 'number')(units)
-            key.padding = a.sane(key.padding, `${key.name}.padding`, 'number')(units)
-            key.skip = a.sane(key.skip, `${key.name}.skip`, 'boolean')()
-            key.asym = a.asym(key.asym, `${key.name}.asym`)
-
-            // templating support
-            for (const [k, v] of Object.entries(key)) {
-                if (a.type(v)(units) == 'string') {
-                    key[k] = u.template(v, key)
-                }
-            }
-
-            keys.push(key)
+         // setting up column-level anchor
+        if (!firstCol) {
+            zoneAnchor.x += keys[0].spread
         }
-
-        // setting up column-level anchor
-        if (!first_col) {
-            zone_anchor.x += keys[0].spread
-        }
-        zone_anchor.y += keys[0].stagger
-        const col_anchor = zone_anchor.clone()
-
-        // applying col-level rotation (cumulatively, for the next columns as well)
-
+        zoneAnchor.y += keys[0].stagger
+        const colAnchor = zoneAnchor.clone();
         if (keys[0].splay) {
-            push_rotation(
+            pushRotation(
                 rotations,
                 keys[0].splay,
-                col_anchor.clone().shift(keys[0].origin, false).p
-            )
+                colAnchor.clone().shift(keys[0].origin, false).p
+            );
         }
+        let runningAnchor = colAnchor.clone();
+        rotations.forEach(r =>
+            runningAnchor.rotate(r.angle, r.origin)
+        );
 
-        // actually laying out keys
-        let running_anchor = col_anchor.clone()
-        for (const r of rotations) {
-            running_anchor.rotate(r.angle, r.origin)
-        }
+        keys.forEach(key => {
+            let point = runningAnchor.clone();
+            point.r += key.orient;
+            point.shift(key.shift);
+            point.r += key.rotate;
 
-        for (const key of keys) {
+            point = anchor_lib.parse(key.adjust, `${key.name}.adjust`, {}, point)(units);
 
-            // copy the current column anchor
-            let point = running_anchor.clone()
+            point.meta = key;
+            points[key.name] = point;
 
-            // apply cumulative per-key adjustments
-            point.r += key.orient
-            point.shift(key.shift)
-            point.r += key.rotate
+            runningAnchor.shift([0, key.padding])
 
-            // commit running anchor
-            running_anchor = point.clone()
+        });
+        firstCol = false;
+    });
 
-            // apply independent adjustments
-            point = anchor_lib.parse(key.adjust, `${key.name}.adjust`, {}, point)(units)
-
-            // save new key
-            point.meta = key
-            points[key.name] = point
-
-            // advance the running anchor to the next position
-            running_anchor.shift([0, key.padding])
-        }
-
-        first_col = false
-    }
-
-    return points
-}
+    return points;
+};
 
 const parse_axis = exports._parse_axis = (config, name, points, units) => {
     if (!['number', 'undefined'].includes(a.type(config)(units))) {
@@ -316,7 +257,7 @@ exports.parse = (config, units) => {
         delete zone.mirror
 
         // creating new points
-        let new_points = render_zone(zone_name, zone, anchor, global_key, units)
+        let new_points = renderZone(zone_name, zone, anchor, global_key, units)
 
         // simplifying the names in individual point "zones" and single-key columns
         while (Object.keys(new_points).some(k => k.endsWith('_default'))) {
