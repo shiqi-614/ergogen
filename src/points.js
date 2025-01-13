@@ -26,14 +26,15 @@ const combineRows = (zoneRows, colRows) =>
         : { default: {} };
 
 
-const extendKeyMetaByPriority = (globalKey, zoneKey, colKey, rowConfig, units) => {
+const extendKeyMetaByPriority = (globalKey, zoneKey, colKey, rowConfig, rowInCol, units) => {
     const defaultKey = u.createDefaultKey(units);
     const key = prep.extend(
         defaultKey,
         globalKey,
         zoneKey,
         colKey,
-        rowConfig || {}
+        rowConfig || {},
+        rowInCol || {}
     );
 
     key.stagger = a.sane(key.stagger, `${key.name}.stagger`, 'number')(units)
@@ -89,6 +90,7 @@ const renderZone = (zoneName, zone, zoneAnchor, globalKey, units) => {
                 zoneKey,
                 col.key,
                 combinedRows[row],
+                col.rows ? col.rows[col] : {},
                 units
             );
             fillNameByTemplate(key, zone, zoneName, col, colName, row, units);

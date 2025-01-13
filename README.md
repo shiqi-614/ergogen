@@ -16,7 +16,7 @@ The project aims to provide a common configuration format to describe ***ergonom
 
 #### How to debug server
 
-`node --inspect-brk src/src/server.js`
+`node --inspect-brk src/server.js`
 
 Open chrome and visit `chrome://inspect`
 
