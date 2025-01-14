@@ -1,15 +1,4 @@
-
-const listSet = new Set([
-    'fp_line',
-    'fp_arc',
-    'fp_circle',
-    'pad',
-    'property'
-]);
-
-
 module.exports = { parseContent };
-
 
 function parseContent(content) {
     const result = {};
@@ -36,22 +25,11 @@ function parseContent(content) {
                     if (section) {
                         const {key, data} = section;
                         contentObjStack.push([key, data]);
-                        if (listSet.has(key)) {
-                            if (!curObj.hasOwnProperty(key)) {
-                                curObj[key] = [];
-                            }
-                            curObj[key].push(data);
-                        } else {
-                            // console.log(key);
-                            // console.log(JSON.stringify(data));
-                            // console.log("cur");
-                            // console.log(JSON.stringify(curObj));
-                            curObj[key] = data;
-                        }
-                        // console.log("cur data1: " + JSON.stringify(data));
+
+                        updateOrAppendToKey(curObj, key, data);
                         curObj = data;
                     }
-                }
+                } 
                 bracketStack.push(char);
                 currentContent = '';
             } else if (char === ')') {
@@ -60,10 +38,7 @@ function parseContent(content) {
                     const section  = parseSection(currentContent);
                     if (section) {
                         let {key, data} = section;
-                        // console.log("add ");
-                        // console.log("key:" + key+ " dat:" + JSON.stringify(data, null, 2));
-                        // console.log("curObj" + JSON.stringify(curObj, null, 2));
-                        curObj[key] = data;
+                        updateOrAppendToKey(curObj, key, data);
                     }
                 } else {
                     if (contentObjStack.length > 0) {
@@ -106,32 +81,28 @@ function parseSection(section) {
             case 'end':
             case 'at':
             case 'center':
+            case 'xy':
+            case 'mid':
                 data = parseCoordinates(section);
                 return { key, data};
             case 'size':
+                data = parseSize(section);
+                return { key, data};
             case 'xyz':
-                data = parseNumList(section);
+                data = parseXyz(section);
                 return {key, data};
             case 'layer':
             case 'layers':
                 data = parseLayers(section);
                 return { key, data};
-            case 'offset':
-            case 'effects':
-            case 'fp_line':
-            case 'fp_arc':
-            case 'fp_circle':
-            case 'scale':
-            case 'rotate':
-            case 'font':
-            case 'stroke':
-                data = {};
-                return { key, data};
             case 'property':
             case 'fp_text':
                 data = {};
-                data[words[1]] = data[words[2]];
-                return { key, data};
+                const result = extractProperty(section)
+                if (result && result.property) {
+                    data[result.property] = result.value;
+                }
+                return { key, data };
             case 'footprint':
                 data = {};
                 data['name'] = words[1] ? words[1]: '';
@@ -165,8 +136,11 @@ function parseSection(section) {
                 }
                 return {key, data};
             default:
-                data = section.substr(key.length + 1);
-                return { key, data};
+                data = section.substr(key.length + 1).trim();
+                if (!data) {
+                    data = {}
+                } 
+                return { key, data };
         }
     } else {
         return null;
@@ -183,9 +157,21 @@ function parseCoordinates(section) {
     };
 }
 
-function parseNumList(section) {
+function parseSize(section) {
     const matches = section.match(/-?\d+(\.\d+)?/g);
-    return matches.map(Number);
+    return {
+        w: parseFloat(matches[0]),
+        h: parseFloat(matches[1]),
+    };
+}
+
+function parseXyz(section) {
+    const matches = section.match(/-?\d+(\.\d+)?/g);
+    return {
+        x: parseFloat(matches[0]),
+        y: parseFloat(matches[1]),
+        z: matches[2] ? parseFloat(matches[2]) : undefined
+    };
 }
 
 function parseLayers(section) {
@@ -211,3 +197,30 @@ function parseLayers(section) {
     // 用空格分隔并返回结果
 }
 
+function updateOrAppendToKey(curObj, key, data) {
+    if (curObj.hasOwnProperty(key)) {
+        if (!Array.isArray(curObj[key])) {
+            let tmp = curObj[key];
+            curObj[key] = [];
+            curObj[key].push(tmp);
+        }
+        curObj[key].push(data);
+    } else {
+        curObj[key] = data;
+    }
+}
+
+function extractProperty(input) {
+    const match = input.match(/"([\w\s]+)"\s+"([^"]*)"/); 
+    if (!match) {
+        return null; 
+    }
+
+    const property = match[1].trim(); 
+    const value = match[2]
+        .split(/\s+/) 
+        .filter(v => v.length > 0) 
+        .join(' '); 
+
+    return { property, value }; // 如果 value 是空字符串，也会返回
+}

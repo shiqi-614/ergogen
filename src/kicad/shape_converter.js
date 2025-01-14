@@ -1,3 +1,4 @@
+
 const fs = require('fs');
 const m = require('makerjs')
 const path = require('path');
@@ -22,7 +23,7 @@ class FpCircleStrategy {
 class CircleStrategy {
     convert(item) {
         const key = getId('circle', item);
-        var circle = new m.paths.Circle([item.at.x, item.at.y*-1], item.size[0]/2);
+        var circle = new m.paths.Circle([item.at.x, item.at.y*-1], item.size.w/2);
         // console.log("kicad circle: " + JSON.stringify(item));
         // console.log("convert to makerjs circle: "+ JSON.stringify(circle));
         return {[key]: circle};
@@ -32,8 +33,8 @@ class CircleStrategy {
 class OvalStrategy {
     convert(item) {
         const key = getId('oval', item);
-        var oval = new m.models.Oval(item.size[0], item.size[1]);
-        oval.origin = [item.at.x - item.size[0]/2, item.at.y * -1 - item.size[0]/2];
+        var oval = new m.models.Oval(item.size.w, item.size.h);
+        oval.origin = [item.at.x - item.size.w/2, item.at.y * -1 - item.size.w/2];
         // console.log("kicad oval: " + JSON.stringify(item));
         // console.log("convert to makerjs oval: "+ JSON.stringify(oval));
         return {[key]: oval};
@@ -46,15 +47,18 @@ class RoundRectStrategy {
         // console.log("convert roundrect: " + JSON.stringify(item));
         var key = getId('roundrect', item);
         // var roundrect = new m.models.Rectangle(
-            // item.size[0], 
-            // item.size[1]
+            // item.size.w, 
+            // item.size.h
         // )
         var roundrect = new m.models.RoundRectangle(
-            item.size[0], 
-            item.size[1], 
-            item.roundrect_rratio * Math.min(item.size[0], item.size[1])
+            item.size.w, 
+            item.size.h, 
+            item.roundrect_rratio * Math.min(item.size.w, item.size.h)
         )
-        roundrect.origin = [item.at.x - item.size[0]/2, item.at.y * -1 - item.size[1]/2];
+        roundrect.origin = [item.at.x - item.size.w/2, item.at.y * -1 - item.size.h/2];
+        if (item.at.angle) {
+            m.model.rotate(roundrect, item.at.angle, [item.at.x, item.at.y * -1]);
+        }
         // console.log("kicad roundrect: " + JSON.stringify(item));
         // console.log("convert to makerjs roundrect: "+ JSON.stringify(roundrect));
         return {[key]: roundrect};
@@ -88,9 +92,9 @@ class ArcStrategy {
         const end = {x:item.end.x, y:item.end.y * -1};
 
         // 将 mid 坐标从字符串转换为数字数组
-        const midCoords = item.mid.split(' ').map(Number);
+        const mid = item.mid
 
-        const res = calculateCircleFromThreePoints(start, {x:midCoords[0], y:midCoords[1] *-1}, end);
+        const res = calculateCircleFromThreePoints(start, {x:mid.x, y:mid.y *-1}, end);
         // 计算弧的原点，假设弧是圆弧的部分
         const cx = res.center.x;
         const cy = res.center.y;
@@ -137,36 +141,86 @@ class RectStrategy {
     convert(item) {
         var key = getId('rect', item);
         var rect = new m.models.Rectangle(
-            item.size[0], 
-            item.size[1]
+            item.size.w, 
+            item.size.h
         )
-        rect.origin = [item.at.x - item.size[0]/2, item.at.y * -1 - item.size[1]/2];
+        rect.origin = [item.at.x - item.size.w/2, item.at.y * -1 - item.size.h/2];
+        if (item.at.angle) {
+            m.model.rotate(rect, item.at.angle, [item.at.x, item.at.y * -1]);
+        }
         // console.log("kicad rect: " + JSON.stringify(item));
         // console.log("convert to makerjs rect: "+ JSON.stringify(rect));
         return {[key]: rect};
     }
 }
 
+class FpPolyStrategy {
+    convert(item) {
+        var key = getId('fpPoly', item);
+        // Extract the points
+        const points = item.pts.xy;
+
+        const model = {
+            paths: {}
+        };
+
+        // Add lines to the model
+        for (let i = 0; i < points.length - 1; i++) {
+            const start = [points[i].x, points[i].y * -1];
+            const end = [points[i + 1].x, points[i + 1].y * -1];
+            model.paths[`line${i + 1}`] = new m.paths.Line(start, end);
+        }
+        return {[key]: model};
+    }
+}
 
 class ShapeConverter {
     constructor() {
-        this.strategies = {
-            'circle': new CircleStrategy(),
-            'roundrect': new RoundRectStrategy(),
-            'line': new LineStrategy(),
-            'arc': new ArcStrategy(),
-            'rect': new RectStrategy(),
-            'fp_circle': new FpCircleStrategy(),
-            'oval': new OvalStrategy()
-        };
+        this.strategies = {}; // 延迟实例化策略
+    }
+
+    _getStrategy(shape) {
+        switch (shape) {
+            case 'circle':
+                return this._initializeStrategy('circle', CircleStrategy);
+            case 'roundrect':
+                return this._initializeStrategy('roundrect', RoundRectStrategy);
+            case 'line':
+            case 'fp_line': // 共享 LineStrategy
+                return this._initializeStrategy('line', LineStrategy);
+            case 'arc':
+            case 'fp_arc': // 共享 ArcStrategy
+                return this._initializeStrategy('arc', ArcStrategy);
+            case 'rect':
+                return this._initializeStrategy('rect', RectStrategy);
+            case 'fp_circle':
+                return this._initializeStrategy('fp_circle', FpCircleStrategy);
+            case 'oval':
+                return this._initializeStrategy('oval', OvalStrategy);
+            case 'fp_poly':
+                return this._initializeStrategy('fp_poly', FpPolyStrategy);
+            default:
+                return null;
+        }
+    }
+
+    _initializeStrategy(key, StrategyClass) {
+        // 如果策略未初始化，则实例化并缓存
+        if (!this.strategies[key]) {
+            this.strategies[key] = new StrategyClass();
+        }
+        return this.strategies[key];
     }
 
     convert(item, shape) {
-        // console.log("pad: " + JSON.stringify(item));
-        const strategy = this.strategies[item.shape||shape];
+        const resolvedShape = item.shape || shape;
+        // console.log("shape:" + resolvedShape);
+        const strategy = this._getStrategy(resolvedShape);
+
         if (!strategy) {
-            throw new Error(`Unsupported shape: ${item.shape} or ${shape}`);
+            throw new Error(`Unsupported shape: ${resolvedShape}`);
         }
+
         return strategy.convert(item);
     }
 }
@@ -174,44 +228,59 @@ class ShapeConverter {
 const shape_converter = new ShapeConverter();
 
 function layerCheck(item) {
-    return item.hasOwnProperty('layer') && 
-        (item.layer.endsWith("CrtYd") 
-            || item.layer.endsWith("Dwgs.User")
-            || item.layer.endsWith("Fab")
-        );
+    const layersToCheck = [];
+    
+    if (item.hasOwnProperty('layer')) {
+        layersToCheck.push(...(Array.isArray(item.layer) ? item.layer : [item.layer]));
+    }
+
+    if (item.hasOwnProperty('layers')) {
+        layersToCheck.push(...(Array.isArray(item.layers) ? item.layers : [item.layers]));
+    }
+
+    const result = layersToCheck.some(layer => 
+        layer.endsWith("CrtYd") || 
+        layer.endsWith("Dwgs.User") || 
+        layer.endsWith("Fab") || 
+        layer.endsWith("Cu") ||
+        layer.endsWith("SilkS")
+    );
+
+    // Optionally log for debugging (can be removed or controlled via a flag)
+    // console.log("result: " + result + JSON.stringify(item, null, 2));
+
+    return result;
 }
 
-// 上下文类 - 负责选择策略
+const SUPPORTED_KICAD_FOOTPRINT_ATTRIBUTES = new Set([
+    "fp_line",
+    "fp_circle",
+    "pad", // pad struct have shape property, will use shape to get converter
+    "fp_arc",
+    "fp_poly"
+]);
+
 exports.convert = (footprint) => {
     // console.log("footpritn item:" + JSON.stringify(item));
     // const real_shape = item.shape||shape;
     // console.log("real shape: " + real_shape);
-    
+
+    // console.log("footprint");   
+    // console.log(JSON.stringify(footprint, null, 2));
     var allItems = {};
-    if (footprint.fp_line) {
-        const line_list = footprint.fp_line
-            .filter((item) => layerCheck(item))
-            .flatMap((item) => shape_converter.convert(item, 'line'));
-        allItems = Object.assign(allItems, ...line_list);
-    }
-    if (footprint.fp_circle) {
-        const fp_circle_list = footprint.fp_circle
-            .filter((item) => layerCheck(item))
-            .flatMap((item) => shape_converter.convert(item, 'fp_circle'));
-        allItems = Object.assign(allItems, ...fp_circle_list);
-    }
-    if (footprint.pad) {
-        const pad_list = footprint.pad
-            .flatMap((item) => shape_converter.convert(item));
-        allItems = Object.assign(allItems, ...pad_list);
-    }
-    if (footprint.fp_arc) {
-        const arc_list = footprint.fp_arc
-            .filter((item) => layerCheck(item))
-            .flatMap((item) => shape_converter.convert(item, 'arc'));
-        allItems = Object.assign(allItems, ...arc_list);
-    }
-    // const allItems = Object.assign({}, ...pad_list);
+    Object.entries(footprint).forEach(([key, value]) => {
+        if(SUPPORTED_KICAD_FOOTPRINT_ATTRIBUTES.has(key)) {
+            const valueList = Array.isArray(value) 
+                ? value
+                : [value];
+            const convertedList = valueList
+                .filter(layerCheck) 
+                .flatMap(item => shape_converter.convert(item, key)); 
+
+            allItems = { ...allItems, ...Object.assign({}, ...convertedList) };
+
+        }
+    });
 
     const pathItems = {};
     const modelItems = {};
