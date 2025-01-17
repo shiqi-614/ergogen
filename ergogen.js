@@ -3993,7 +3993,6 @@
 	const kicadMods = new Map();
 
 
-	// 递归遍历目录
 	function findKicadModFilesAndParse() {
 	    const path = require$$2;
 	    const modFolderPath = path.join(__dirname, './ErgoCai.pretty');
@@ -4016,10 +4015,8 @@
 	}
 
 	async function fetchKicadMod$1(footprint_name) {
-	    if (u$2.isNode()) {
-	        if (kicadMods.size == 0) {
-	            findKicadModFilesAndParse();
-	        }
+	    if (u$2.isNode() && kicadMods.size == 0) {
+	        findKicadModFilesAndParse();
 	    }
 	    
 	    console.log("try to get footprint: " + footprint_name);
