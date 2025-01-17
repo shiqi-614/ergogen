@@ -437,7 +437,7 @@
 		test: "mocha -r test/helpers/register test/index.js",
 		coverage: "nyc --reporter=html --reporter=text npm test",
 		"start-prod": "NODE_ENV=production node src/server.js",
-		"start-dev": "NODE_ENV=development node src/server.js"
+		"start-dev": "NODE_ENV=development nodemon --watch src js --exec 'npm run build && cp dist/ergogen.js $ERGOGEN_GUI/public/dependencies/ergogen.js && node src/server.js'"
 	};
 	var dependencies = {
 		axios: "^1.7.7",
@@ -463,6 +463,7 @@
 		"dir-compare": "^4.0.0",
 		glob: "^8.1.0",
 		mocha: "^10.2.0",
+		nodemon: "^3.1.9",
 		nyc: "^15.1.0",
 		rollup: "^3.10.1",
 		sinon: "^15.0.1"
