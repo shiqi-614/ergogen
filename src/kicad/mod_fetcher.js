@@ -1,14 +1,15 @@
 const fs = require('fs');
 const { parseContent } = require('./mod_parser');
 const { fetchAndCache } = require('./mod_github_fetcher');
-const path = require('path');
+const u = require('../utils')
+
 
 const kicadMods = new Map();
 
-const isNode = typeof process !== "undefined" && process.versions != null && process.versions.node != null;
 
 // 递归遍历目录
 function findKicadModFilesAndParse() {
+    const path = require('path');
     const modFolderPath = path.join(__dirname, './ErgoCai.pretty');
     const files = fs.readdirSync(modFolderPath);
 
@@ -29,7 +30,7 @@ function findKicadModFilesAndParse() {
 }
 
 async function fetchKicadMod(footprint_name) {
-    if (isNode) {
+    if (u.isNode()) {
         if (kicadMods.size == 0) {
             findKicadModFilesAndParse();
         }

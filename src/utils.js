@@ -154,3 +154,6 @@ exports.createDefaultKey = (units) => ({
     name: '{{zone.name}}_{{colrow}}',
 });
 
+exports.isNode = () =>
+    typeof process !== "undefined" && 
+    process.versions?.node != null;
