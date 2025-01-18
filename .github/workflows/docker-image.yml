@@ -23,23 +23,6 @@ jobs:
           submodules: recursive 
           fetch-depth: 0        
       
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build project
-        run: npm run build
-
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist  
-          
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       
@@ -60,13 +43,14 @@ jobs:
       - name: Trigger Deploy Workflow
         if: ${{ success() }} # 确保只在前面步骤成功时运行
         env:
-          GITHUB_TOKEN: ${{ secrets.WORKFLOW_TRIGGER_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.ALL_WORKFLOW_TRIGGER }}
         run: |
           curl -X POST \
             -H "Authorization: token $GITHUB_TOKEN" \
             -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/shiqi-614/ErgogenDocker/dispatches \
+            https://api.github.com/repos/shiqi-614/ergogen-gui/dispatches \
             -d '{"event_type": "trigger-event"}'
+
 
       
 
