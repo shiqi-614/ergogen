@@ -1,8 +1,55 @@
 const m = require('makerjs')
 
-exports.deepcopy = value => {
+const deepcopy = exports.deepcopy = value => {
     if (value === undefined) return undefined
     return JSON.parse(JSON.stringify(value))
+}
+
+const array = exports.array = (obj) => {
+
+}
+const convertArrayFieldToObject = exports.convertArrayFieldToObject = (data, fieldName)  => {
+    if (data[fieldName] && Array.isArray(data[fieldName])) {
+        data[fieldName] = { ...data[fieldName] };
+    } 
+    return data[fieldName];
+}
+
+const merge = exports.merge = (whereParent, whereChild) => {
+    if (whereParent == null && whereChild == null) {
+        return null;
+    }
+    const where = deepcopy(whereParent);
+    where.rotate = combineNumber(whereParent?.rotate ?? 0,  whereChild?.rotate ?? 0);
+    where.shift = combineNumber(whereParent?.shift ?? 0, whereChild?.shift ?? 0);
+    return where;
+}
+
+function combineNumber(obj1, obj2) {
+    const shift1 = obj1 ?? 0;
+    const shift2 = obj2 ?? 0;
+
+    // If both shifts are numbers
+    if (typeof shift1 === 'number' && typeof shift2 === 'number') {
+        return shift1 + shift2;
+    }
+
+    // If one or both shifts are arrays
+    const array1 = Array.isArray(shift1) ? shift1 : [shift1];
+    const array2 = Array.isArray(shift2) ? shift2 : [shift2];
+
+    // Find the maximum length of the two arrays
+    const maxLength = Math.max(array1.length, array2.length);
+
+    // Create a new array by adding corresponding elements
+    const result = [];
+    for (let i = 0; i < maxLength; i++) {
+        const val1 = array1[i] || 0; // Default to 0 if array1 is shorter
+        const val2 = array2[i] || 0; // Default to 0 if array2 is shorter
+        result.push(val1 + val2);
+    }
+
+    return result;
 }
 
 const deep = exports.deep = (obj, key, val) => {

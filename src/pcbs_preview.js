@@ -8,23 +8,11 @@ const prep = require('./prepare')
 const anchor = require('./anchor').parse
 const filter = require('./filter').parse
 
-
 const footprint_types = require('./footprints')
 const template_types = require('./templates')
 
-const { fetchKicadMod } = require('./kicad/mod_fetcher');
-const { fetchFootprintTypes } = require('./kicad/footprint_types');
+const { fetchKicadMod, normalizeWhat, fetchWhat } = require('./kicad/fetcher');
 const kicad_shape_converter = require('./kicad/shape_converter')
-
-exports.inject_footprint = (name, fp) => {
-    footprint_types[name] = fp
-}
-
-exports.inject_template = (name, t) => {
-    template_types[name] = t
-}
-
-// const footprint_library = kicad_mod_parser.parse();
 
 const outline = (config, name, points, outlines, units) => {
 
@@ -42,9 +30,9 @@ const outline = (config, name, points, outlines, units) => {
     }, units]
 } 
 
-async function footprint_shape(name) {
-    console.log("draw footprint: " + name);
-    const jsonObj = await fetchKicadMod(name);
+async function footprint_shape(footprintConfig) {
+    console.log("draw footprint: " + footprintConfig.what);
+    const jsonObj = await fetchKicadMod(footprintConfig.what);
 
     // console.log(JSON.stringify(jsonObj, null, 2));
     let [pathItems, modelItems] = kicad_shape_converter.convert(jsonObj.footprint);
@@ -53,77 +41,112 @@ async function footprint_shape(name) {
             models: u.deepcopy(modelItems),
             paths: u.deepcopy(pathItems)
         };
+        if (footprintConfig.side == "Back") {
+            res.layer = "olive";
+        } else {
+            res.layer = "aqua";
+        }
         // console.log("res:" + JSON.stringify(res, null, 2));
         const bbox = m.measure.modelExtents(o);
         return [res, bbox]
     };
 }
 
+function setFootprintInPoints(w, footprintConfig) {
+    if (footprintConfig.meta && footprintConfig.meta.type) {
+        if (!w.meta.footprints) {
+            w.meta.footprints = {};
+        }
+        const type = footprintConfig.meta.type;
+        w.meta.footprints[type] = normalizeWhat(footprintConfig.what);
+    }
+
+}
+
+async function mergeFootprintsFromModules(pcb_name, pcb_config) {
+
+    pcb_config.footprints = u.convertArrayFieldToObject(pcb_config, 'footprints');
+    pcb_config.modules = u.convertArrayFieldToObject(pcb_config, 'modules');
+
+    let footprints = pcb_config.footprints;
+
+    for (const [name, moduleConfig] of Object.entries(pcb_config.modules)) {
+        const footprintsFromModule = await getFootprintsFromModule(moduleConfig);
+
+        footprints = {...footprints, ...footprintsFromModule}
+    }
+    return footprints
+
+}
+
+async function getFootprintsFromModule(moduleConfig) {
+    const response = await fetchWhat(moduleConfig.what)
+    const data = yaml.load(response)
+    
+    let footprints = {}
+    for (const [name, content] of Object.entries(data)) {
+        const subFootprints = u.convertArrayFieldToObject(content, 'footprints')
+        for (const [name, footprintConfig] of Object.entries(subFootprints)) {
+            footprintConfig.where = u.merge(moduleConfig?.where, footprintConfig?.where);
+            footprintConfig.adjust = u.merge(moduleConfig?.adjust, footprintConfig?.adjust);
+            if (footprintConfig.side == null) {
+                footprintConfig.side = moduleConfig?.side;
+            }
+            footprints[name] = footprintConfig;
+        }
+        footprints = {...footprints, ...subFootprints};
+    }
+
+    if (moduleConfig.footprints) {
+        for (const [name, footprintConfig] of Object.entries(moduleConfig.footprints)) {
+            for (const [key, value] of Object.entries(footprintConfig)) {
+                footprints[name][key] = value;
+
+            }
+        }
+    }
+    return footprints;
+
+}
 
 exports.parse = async (config, points, outlines, units) => {
-            
 
-    const footprintTypes = await fetchFootprintTypes();
-    const pcbs = a.sane(config.pcbs || {}, 'pcbs', 'object')()
+    a.typeCheck(config.pcbs || {}, 'pcbs', 'object')
     const results = {}
 
-    for (const [pcb_name, pcb_config] of Object.entries(pcbs)) {
+    for (const [pcb_name, pcb_config] of Object.entries(config.pcbs)) {
 
-        // config sanitization
-        a.unexpected(pcb_config, `pcbs.${pcb_name}`, ['outlines', 'footprints', 'references', 'template', 'params'])
-        const references = a.sane(pcb_config.references || false, `pcbs.${pcb_name}.references`, 'boolean')()
-        const template = template_types[a.in(pcb_config.template || 'kicad5', `pcbs.${pcb_name}.template`, Object.keys(template_types))]
 
         // outline conversion
         if (a.type(pcb_config.outlines)() == 'array') {
             pcb_config.outlines = {...pcb_config.outlines}
         }
-        const config_outlines = a.sane(pcb_config.outlines || {}, `pcbs.${pcb_name}.outlines`, 'object')()
+        const config_outlines = a.typeCheck(pcb_config.outlines || {}, `pcbs.${pcb_name}.outlines`, 'object')
         const kicad_outlines = {}
         for (const [outline_name, outline] of Object.entries(config_outlines)) {
 
             const ref = a.in(outline.outline, `pcbs.${pcb_name}.outlines.${outline_name}.outline`, Object.keys(outlines))
-            const layer = a.sane(outline.layer || 'Edge.Cuts', `pcbs.${pcb_name}.outlines.${outline_name}.outline`, 'string')()
+            const layer = a.typeCheck(outline.layer || 'Edge.Cuts', `pcbs.${pcb_name}.outlines.${outline_name}.outline`, 'string')
             const operation = u[a.in(outline.preview || 'stack', `${outline_name}.operation`, ['add', 'subtract', 'intersect', 'stack'])]
             results[pcb_name] = operation(results[pcb_name], outlines[ref])
         }
 
-        // generate footprints
-        if (a.type(pcb_config.footprints)() == 'array') {
-            pcb_config.footprints = {...pcb_config.footprints}
-        }
-        // console.log("types");
-        // console.log(JSON.stringify(footprintTypes));
 
-        const footprints_config = a.sane(pcb_config.footprints || {}, `pcbs.${pcb_name}.footprints`, 'object')()
-        for (const [f_name, f] of Object.entries(footprints_config)) {
-            const name = `pcbs.${pcb_name}.footprints.${f_name}`
-            // console.log("footprint f: " + JSON.stringify(f));
-            a.sane(f, name, 'object')()
+        const footprints = await mergeFootprintsFromModules(pcb_name, pcb_config);
+        for (const [name, footprintConfig] of Object.entries(footprints)) {
+            const footprintPath = `pcbs.${pcb_name}.footprints.${name}`
+            a.typeCheck(footprintConfig, footprintPath, 'object')
             try {
-                const asym = a.asym(f.asym || 'source', `${name}.asym`)
-                const where = filter(f.where, `${name}.where`, points, units, asym)
-                const original_adjust = f.adjust // need to save, so the delete's don't get rid of it below
-                const adjust = start => anchor(original_adjust || {}, `${name}.adjust`, points, start)(units)
-                const shape_maker = await footprint_shape(f.what)
+                const where = filter(footprintConfig.where, `${footprintPath}.where`, points, units)
+                const originalAdjust = footprintConfig.adjust // need to save, so the delete's don't get rid of it below
+                const adjust = start => anchor(originalAdjust || {}, `${footprintPath}.adjust`, points, start)(units)
+                const shape_maker = await footprint_shape(footprintConfig)
                 for (const w of where) {
-                    if (!w.meta.footprints) {
-                        w.meta.footprints = {};
-                    }
-                    if (f.what in footprintTypes) {
-                        const type = footprintTypes[f.what];
-                        w.meta.footprints[type] = f.what;
-                    }
+                    setFootprintInPoints(w, footprintConfig)
                     const point = adjust(w.clone())
-                    let [shape, bbox] = shape_maker(point) // point is passed for mirroring metadata only...
-                    // console.log("share: " + JSON.stringify(shape, null, 2));
-                    if (f.side == "Back") {
-                        shape.layer = "olive";
-                    } else {
-                        shape.layer = "aqua";
-                    }
+                    let [shape, bbox] = shape_maker() 
                     shape = point.position(shape) // ...actual positioning happens here
-                    const operation = u[a.in(f.preview || 'stack', `${f_name}.operation`, ['add', 'subtract', 'intersect', 'stack'])]
+                    const operation = u[a.in(footprintConfig.preview || 'stack', `${footprintPath}.operation`, ['add', 'subtract', 'intersect', 'stack'])]
                     results[pcb_name] = operation(results[pcb_name], shape)
                     // console.log("preview shape: " + JSON.stringify(shape));
                 }   
@@ -131,7 +154,6 @@ exports.parse = async (config, points, outlines, units) => {
                 console.error('Error place footprint:', error);
             }
 
-            // m.model.simplify(results[pcb_name]);
             m.model.originate(results[pcb_name])
             // console.log("final PCB:" + JSON.stringify(results[pcb_name]));
         }

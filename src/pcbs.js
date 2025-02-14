@@ -12,9 +12,7 @@ const filter = require('./filter').parse
 const footprint_types = require('./footprints')
 const template_types = require('./templates')
 
-const { fetchAndCache } = require('./kicad/mod_github_fetcher');
 const { fetchFootprintTypes } = require('./kicad/footprint_types');
-const kicad_shape_converter = require('./kicad/shape_converter')
 
 exports.inject_footprint = (name, fp) => {
     footprint_types[name] = fp
@@ -41,23 +39,6 @@ const outline = (config, name, points, outlines, units) => {
         return [o, bbox]
     }, units]
 } 
-
-async function footprint_shape(name) {
-    console.log("draw footprint: " + name);
-    const jsonObj = await fetchAndCache(name);
-
-    // console.log(JSON.stringify(jsonObj, null, 2));
-    let [pathItems, modelItems] = kicad_shape_converter.convert(jsonObj.footprint);
-    return () => {
-        const res = {
-            models: u.deepcopy(modelItems),
-            paths: u.deepcopy(pathItems)
-        };
-        // console.log("res:" + JSON.stringify(res, null, 2));
-        const bbox = m.measure.modelExtents(o);
-        return [res, bbox]
-    };
-}
 
 
 exports.parse = async (config, points, outlines, units) => {

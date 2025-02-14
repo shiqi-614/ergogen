@@ -27,10 +27,25 @@ const type = exports.type = val => units => {
     return typeof val;
 };
 
+
 const sane = exports.sane = (val, name, _type) => units => {
     assert(type(val)(units) === _type, `Field "${name}" should be of type ${_type}!`, name, val);
     if (_type === 'number') return mathnum(val)(units);
     return val;
+};
+
+
+const typeCheck = exports.typeCheck = (val, name, _type) => {
+    const actualType = typeof (val);
+    assert(actualType === _type, `Field "${name}" should be of type ${_type}, but got ${actualType}!`, name, val);
+    return val;
+}
+
+
+const normalizeValue = exports.normalizeValue = (val, name, _type) => units => {
+    typeCheck(val, name, _type); 
+    if (_type === 'number') return mathnum(val)(units); 
+    return val; 
 };
 
 const unexpected = exports.unexpected = (obj, name, expected) => {

@@ -84,14 +84,14 @@ const process = async (raw, debug=false, logger=()=>{}) => {
         empty = false
     }
 
-    logger('Scaffolding PCBs...')
-    const pcbs = await pcbs_lib.parse(config, points, outlines, units)
-    results.pcbs = {}
-    for (const [pcb_name, pcb_text] of Object.entries(pcbs)) {
-        if (!debug && pcb_name.startsWith('_')) continue
-        results.pcbs[pcb_name] = pcb_text
-        empty = false
-    }
+    // logger('Scaffolding PCBs...')
+    // const pcbs = await pcbs_lib.parse(config, points, outlines, units)
+    // results.pcbs = {}
+    // for (const [pcb_name, pcb_text] of Object.entries(pcbs)) {
+        // if (!debug && pcb_name.startsWith('_')) continue
+        // results.pcbs[pcb_name] = pcb_text
+        // empty = false
+    // }
 
     logger('Preview PCBs...')
     const pcbs_preview = await pcbs_preview_lib.parse(config, points, outlines, units)
