@@ -30,6 +30,30 @@ const outline = (config, name, points, outlines, units) => {
     }, units]
 } 
 
+function flipVertically(res) {
+    // 遍历 models 并垂直翻转
+    if (res.models) {
+        for (let key in res.models) {
+            if (res.models.hasOwnProperty(key)) {
+                res.models[key] = makerjs.model.mirror(res.models[key], true, false); // 垂直翻转
+                res.models[key] = makerjs.model.rotate(res.models[key], 180);
+            }
+        }
+    }
+
+    // 遍历 paths 并垂直翻转
+    if (res.paths) {
+        for (let key in res.paths) {
+            if (res.paths.hasOwnProperty(key)) {
+                res.paths[key] = makerjs.path.mirror(res.paths[key], true, false); // 垂直翻转
+                res.paths[key] = makerjs.path.rotate(res.paths[key], 180);
+            }
+        }
+    }
+
+    return res;
+}
+
 async function footprint_shape(footprintConfig) {
     console.log("draw footprint: " + footprintConfig.what);
     const jsonObj = await fetchKicadMod(footprintConfig.what);
@@ -41,8 +65,9 @@ async function footprint_shape(footprintConfig) {
             models: u.deepcopy(modelItems),
             paths: u.deepcopy(pathItems)
         };
-        if (footprintConfig.side == "Back") {
+        if (footprintConfig.side && footprintConfig.side.toLowerCase() === "back") {
             res.layer = "olive";
+            flipVertically(res);
         } else {
             res.layer = "aqua";
         }
@@ -100,6 +125,9 @@ async function getFootprintsFromModule(moduleConfig) {
     if (moduleConfig.footprints) {
         for (const [name, footprintConfig] of Object.entries(moduleConfig.footprints)) {
             for (const [key, value] of Object.entries(footprintConfig)) {
+                if (!footprints[name]) {
+                    footprints[name] = {};
+                }
                 footprints[name][key] = value;
 
             }
