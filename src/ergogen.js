@@ -116,7 +116,10 @@ const process = async (raw, debug=false, logger=()=>{}) => {
                 const response = await axios.post(stage_configs.KICADGEN_API_URL, 
                     {
                         "points": points,
-                        "name": pcb_name,
+                        "pcb" : {
+                            "name": pcb_name,
+                            "config": pcb_config
+                        }
                     },
                     {
                         headers: {

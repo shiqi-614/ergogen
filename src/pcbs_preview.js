@@ -35,8 +35,8 @@ function flipVertically(res) {
     if (res.models) {
         for (let key in res.models) {
             if (res.models.hasOwnProperty(key)) {
-                res.models[key] = makerjs.model.mirror(res.models[key], true, false); // 垂直翻转
-                res.models[key] = makerjs.model.rotate(res.models[key], 180);
+                res.models[key] = m.model.mirror(res.models[key], true, false); // 垂直翻转
+                res.models[key] = m.model.rotate(res.models[key], 180);
             }
         }
     }
@@ -45,8 +45,8 @@ function flipVertically(res) {
     if (res.paths) {
         for (let key in res.paths) {
             if (res.paths.hasOwnProperty(key)) {
-                res.paths[key] = makerjs.path.mirror(res.paths[key], true, false); // 垂直翻转
-                res.paths[key] = makerjs.path.rotate(res.paths[key], 180);
+                res.paths[key] = m.path.mirror(res.paths[key], true, false); // 垂直翻转
+                res.paths[key] = m.path.rotate(res.paths[key], 180);
             }
         }
     }
