@@ -255,7 +255,7 @@ exports.parse = (config, units) => {
     const filtered = {};
     for (const [k, p] of Object.entries(points)) {
         if (p.meta.skip) continue
-        p.index = index++;
+        p.meta.index = index++;
         filtered[k] = p
     }
     // done

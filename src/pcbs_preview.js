@@ -141,8 +141,13 @@ exports.parse = async (config, points, outlines, units) => {
 
     a.typeCheck(config.pcbs || {}, 'pcbs', 'object')
     const results = {}
+    results['pcbs'] = {};
 
     for (const [pcb_name, pcb_config] of Object.entries(config.pcbs)) {
+
+        let pcb = results.pcbs[pcb_name] = {};
+        let preview;
+        let footprints = pcb['footprints'] = {};
 
 
         // outline conversion
@@ -156,15 +161,15 @@ exports.parse = async (config, points, outlines, units) => {
             const ref = a.in(outline.outline, `pcbs.${pcb_name}.outlines.${outline_name}.outline`, Object.keys(outlines))
             const layer = a.typeCheck(outline.layer || 'Edge.Cuts', `pcbs.${pcb_name}.outlines.${outline_name}.outline`, 'string')
             const operation = u[a.in(outline.preview || 'stack', `${outline_name}.operation`, ['add', 'subtract', 'intersect', 'stack'])]
-            results[pcb_name] = operation(results[pcb_name], outlines[ref])
+            preview = operation(preview, outlines[ref])
         }
 
-
-        const footprints = await mergeFootprintsFromModules(pcb_name, pcb_config);
-        for (const [name, footprintConfig] of Object.entries(footprints)) {
+        const allFootprints = await mergeFootprintsFromModules(pcb_name, pcb_config);
+        for (const [name, footprintConfig] of Object.entries(allFootprints)) {
             const footprintPath = `pcbs.${pcb_name}.footprints.${name}`
             a.typeCheck(footprintConfig, footprintPath, 'object')
             try {
+                footprints[name] = [];
                 const where = filter(footprintConfig.where, `${footprintPath}.where`, points, units)
                 const originalAdjust = footprintConfig.adjust // need to save, so the delete's don't get rid of it below
                 const adjust = start => anchor(originalAdjust || {}, `${footprintPath}.adjust`, points, start)(units)
@@ -175,16 +180,17 @@ exports.parse = async (config, points, outlines, units) => {
                     let [shape, bbox] = shape_maker() 
                     shape = point.position(shape) // ...actual positioning happens here
                     const operation = u[a.in(footprintConfig.preview || 'stack', `${footprintPath}.operation`, ['add', 'subtract', 'intersect', 'stack'])]
-                    results[pcb_name] = operation(results[pcb_name], shape)
-                    // console.log("preview shape: " + JSON.stringify(shape));
+                    preview = operation(preview, shape)
+                    footprints[name].push({'point': point, 'config': footprintConfig});
                 }   
             } catch (error) {
                 console.error('Error place footprint:', error);
             }
 
-            m.model.originate(results[pcb_name])
+            m.model.originate(preview)
             // console.log("final PCB:" + JSON.stringify(results[pcb_name]));
         }
+        pcb['preview'] = preview;
     }
 
     return results

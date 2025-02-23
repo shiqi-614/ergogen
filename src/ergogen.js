@@ -95,12 +95,14 @@ const process = async (raw, debug=false, logger=()=>{}) => {
 
     logger('Preview PCBs...')
     const pcbs_preview = await pcbs_preview_lib.parse(config, points, outlines, units)
-    results.pcbs_preview = {}
-    for (const [pcb_name, pcb_text] of Object.entries(pcbs_preview)) {
+    results.pcbs = {}
+    for (const [pcb_name, pcb_text] of Object.entries(pcbs_preview.pcbs)) {
         console.log("preview: " + pcb_name);
         // if (!debug && pcb_name.startsWith('_')) continue
-        results.pcbs_preview[pcb_name] = io.twodee(pcb_text, debug);
-        empty = false
+        results.pcbs[pcb_name] = {};
+        results.pcbs[pcb_name]['preview'] = io.twodee(pcb_text.preview, debug);
+        results.pcbs[pcb_name]['footprints'] = pcb_text.footprints;
+        empty = false;
     }
     results.points = points
     results.demo = io.twodee(points_lib.visualize(points, units), debug)
