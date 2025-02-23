@@ -54,7 +54,7 @@ const extendKeyMetaByPriority = (globalKey, zoneKey, colKey, rowConfig, rowInCol
 
 const fillNameByTemplate = (key, zone, zoneName, col, colName, row, units) => {
     // Set metadata
-    key.zone = zone;
+    key.zone = {};
     key.zone.name = zoneName;
     key.col = col;
     key.col.name = colName;
@@ -123,8 +123,8 @@ const renderZone = (zoneName, zone, zoneAnchor, globalKey, units) => {
 
             point = anchor_lib.parse(key.adjust, `${key.name}.adjust`, {}, point)(units);
 
-            point.meta = key;
             points[key.name] = point;
+            point.meta = key;
 
             runningAnchor.shift([0, key.padding])
 
@@ -161,78 +161,6 @@ const perform_mirror = exports._perform_mirror = (point, axis) => {
     return [mirrored_name, mp]
 }
 
-const perform_autobind = exports._perform_autobind = (points, units) => {
-
-    const bounds = {}
-    const col_lists = {}
-    const mirrorzone = p => (p.meta.mirrored ? 'mirror_' : '') + p.meta.zone.name
-
-    // round one: get column upper/lower bounds and per-zone column lists
-    for (const p of Object.values(points)) {
-
-        const zone = mirrorzone(p)
-        const col = p.meta.col.name
-
-        if (!bounds[zone]) bounds[zone] = {}
-        if (!bounds[zone][col]) bounds[zone][col] = {min: Infinity, max: -Infinity}
-        if (!col_lists[zone]) col_lists[zone] = Object.keys(p.meta.zone.columns)
-
-        bounds[zone][col].min = Math.min(bounds[zone][col].min, p.y)
-        bounds[zone][col].max = Math.max(bounds[zone][col].max, p.y)
-    }
-
-    // round two: apply autobind as appropriate
-    for (const p of Object.values(points)) {
-
-        const autobind = a.sane(p.meta.autobind, `${p.meta.name}.autobind`, 'number')(units)
-        if (!autobind) continue
-
-        const zone = mirrorzone(p)
-        const col = p.meta.col.name
-        const col_list = col_lists[zone]
-        const col_bounds = bounds[zone][col]
-
-        
-        // specify default as -1, so we can recognize where it was left undefined even after number-ification
-        const bind = p.meta.bind = a.trbl(p.meta.bind, `${p.meta.name}.bind`, -1)(units)
-
-        // up
-        if (bind[0] == -1) {
-            if (p.y < col_bounds.max) bind[0] = autobind
-            else bind[0] = 0
-        }
-
-        // down
-        if (bind[2] == -1) {
-            if (p.y > col_bounds.min) bind[2] = autobind
-            else bind[2] = 0
-        }
-
-        // left
-        if (bind[3] == -1) {
-            bind[3] = 0
-            const col_index = col_list.indexOf(col)
-            if (col_index > 0) {
-                const left = bounds[zone][col_list[col_index - 1]]
-                if (left && p.y >= left.min && p.y <= left.max) {
-                    bind[3] = autobind
-                }
-            }
-        }
-
-        // right
-        if (bind[1] == -1) {
-            bind[1] = 0
-            const col_index = col_list.indexOf(col)
-            if (col_index < col_list.length - 1) {
-                const right = bounds[zone][col_list[col_index + 1]]
-                if (right && p.y >= right.min && p.y <= right.max) {
-                    bind[1] = autobind
-                }
-            }
-        }
-    }
-}
 
 exports.parse = (config, units) => {
 
@@ -323,15 +251,13 @@ exports.parse = (config, units) => {
     points = Object.assign(points, global_mirrored_points)
 
     // removing temporary points
-    const filtered = {}
+    let index = 1;
+    const filtered = {};
     for (const [k, p] of Object.entries(points)) {
         if (p.meta.skip) continue
+        p.index = index++;
         filtered[k] = p
     }
-
-    // apply autobind
-    perform_autobind(filtered, units)
-
     // done
     return filtered
 }
