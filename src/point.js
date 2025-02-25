@@ -4,15 +4,24 @@ const u = require('./utils')
 module.exports = class Point {
     constructor(x=0, y=0, r=0, meta={}) {
         if (Array.isArray(x)) {
-            this.x = x[0]
-            this.y = x[1]
-            this.r = 0
-            this.meta = {}
-        } else {
-            this.x = x
-            this.y = y
-            this.r = r
-            this.meta = meta
+            this.x = x[0];
+            this.y = x[1];
+            this.r = 0;
+            this.meta = {};
+        }
+        // Handle object input
+        else if (typeof x === 'object' && x !== null) {
+            this.x = x.x || 0;
+            this.y = x.y || 0;
+            this.r = x.r || 0;
+            this.meta = x.meta || {};
+        }
+        // Handle individual parameters
+        else {
+            this.x = x;
+            this.y = y;
+            this.r = r;
+            this.meta = meta;
         }
     }
 

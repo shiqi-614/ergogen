@@ -11,18 +11,13 @@ const pcbs_preview_lib = require('./pcbs_preview')
 const fs = require('fs');
 const axios = require('axios');
 const stage_configs = require('./stage_configs');
-
-
 const version = require('../package.json').version
 
-const process = async (raw, debug=false, logger=()=>{}) => {
-
+const processBasic = async (raw, debug=false, logger=()=>{}) => {
     const prefix = 'Interpreting format: '
     let empty = true
     let [config, format] = io.interpret(raw, logger)
     let suffix = format
-    // KLE conversion warrants automaticly engaging debug mode
-    // as, usually, we're only interested in the points anyway
     if (format == 'KLE') {
         suffix = `${format} (Auto-debug)`
         debug = true
@@ -35,9 +30,10 @@ const process = async (raw, debug=false, logger=()=>{}) => {
     config = prepare.parameterize(config)
     const results = {}
     if (debug) {
-        results.raw = raw
-        results.canonical = u.deepcopy(config)
+        results.raw = raw;
     }
+
+    results.canonical = u.deepcopy(config)
 
     if (config.meta && config.meta.engine) {
         logger('Checking compatibility...')
@@ -84,41 +80,41 @@ const process = async (raw, debug=false, logger=()=>{}) => {
         empty = false
     }
 
-    // logger('Scaffolding PCBs...')
-    // const pcbs = await pcbs_lib.parse(config, points, outlines, units)
-    // results.pcbs = {}
-    // for (const [pcb_name, pcb_text] of Object.entries(pcbs)) {
-        // if (!debug && pcb_name.startsWith('_')) continue
-        // results.pcbs[pcb_name] = pcb_text
-        // empty = false
-    // }
-
-    logger('Preview PCBs...')
-    const pcbs_preview = await pcbs_preview_lib.parse(config, points, outlines, units)
+    logger('Scaffolding PCBs...')
+    const pcbs = await pcbs_lib.parse(config, points, units)
     results.pcbs = {}
-    for (const [pcb_name, pcb_text] of Object.entries(pcbs_preview.pcbs)) {
-        console.log("preview: " + pcb_name);
-        // if (!debug && pcb_name.startsWith('_')) continue
-        results.pcbs[pcb_name] = {};
-        results.pcbs[pcb_name]['preview'] = io.twodee(pcb_text.preview, debug);
-        results.pcbs[pcb_name]['footprints'] = pcb_text.footprints;
-        results.pcbs[pcb_name]['modules'] = pcb_text.modules;
-        empty = false;
+    for (const [pcb_name, pcb_text] of Object.entries(pcbs)) {
+        results.pcbs[pcb_name] = pcb_text
+        empty = false
     }
-    results.points = points
-    results.demo = io.twodee(points_lib.visualize(points, units), debug)
+    results.points = points;
 
-    if (config?.is_preview === false) {
+    if (!debug && empty) {
+        logger('Output would be empty, rerunning in debug mode...')
+        return processBasic(raw, true, () => {})
+    }
+    return results
+}
+
+const process = async (raw, debug=false, logger=()=>{}) => {
+    const results = await processBasic(raw, debug, logger);
+    
+    logger('Preview PCBs...')
+    const previews = await pcbs_preview_lib.parse(results.canonical, results.pcbs, results.outlines, results.units)
+    for (const [pcb_name, preview] of Object.entries(previews)) {
+        console.log("preview: " + pcb_name);
+        results.pcbs[pcb_name]['preview'] = io.twodee(preview, debug);
+    }
+    results.demo = io.twodee(points_lib.visualize(results.points, results.units), debug);
+
+    if (results.canonical?.is_preview === false) {
         logger("Creating KiCad Project...")
-
         try {
             results.kicad = {};
-
-            console.log(`API URL: ${stage_configs.KICADGEN_API_URL}`);
-            for (const [pcb_name, pcb_config] of Object.entries(config.pcbs)) {
+            for (const [pcb_name, pcb_config] of Object.entries(results.canonical.pcbs)) {
                 const response = await axios.post(stage_configs.KICADGEN_API_URL, 
                     {
-                        "points": points,
+                        "points": results.points,
                         "pcb" : {
                             "name": pcb_name,
                             "config": pcb_config
@@ -139,12 +135,7 @@ const process = async (raw, debug=false, logger=()=>{}) => {
             console.error('There was a problem with the fetch operation:', error);
         }
     }
-
-    if (!debug && empty) {
-        logger('Output would be empty, rerunning in debug mode...')
-        return process(raw, true, () => {})
-    }
-    return results
+    return results;
 }
 
 const inject = (type, name, value) => {
@@ -166,5 +157,6 @@ const inject = (type, name, value) => {
 module.exports = {
     version,
     process,
+    processBasic,
     inject
 }

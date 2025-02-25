@@ -5,6 +5,7 @@ const u = require('./utils')
 const a = require('./assert')
 const o = require('./operation')
 const prep = require('./prepare')
+const Point = require('./point')
 const anchor = require('./anchor').parse
 const filter = require('./filter').parse
 
@@ -15,7 +16,6 @@ const { fetchKicadMod, normalizeWhat, fetchWhat } = require('./kicad/fetcher');
 const kicad_shape_converter = require('./kicad/shape_converter')
 
 const outline = (config, name, points, outlines, units) => {
-
     // prepare params
     a.unexpected(config, `${name}`, ['name', 'origin'])
     a.assert(outlines[config.name], `Field "${name}.name" does not name an existing outline!`)
@@ -77,141 +77,42 @@ async function footprint_shape(footprintConfig) {
     };
 }
 
-function setFootprintInPoints(w, footprintConfig) {
-    if (footprintConfig.meta && footprintConfig.meta.type) {
-        if (!w.meta.footprints) {
-            w.meta.footprints = {};
-        }
-        const type = footprintConfig.meta.type;
-        w.meta.footprints[type] = normalizeWhat(footprintConfig.what);
-    }
 
-}
-
-async function getFootprintsFromModules(pcb_config) {
-    pcb_config.modules = u.convertArrayFieldToObject(pcb_config, 'modules');
-    let footprints = {};
-
-    for (const [name, moduleConfig] of Object.entries(pcb_config.modules)) {
-        const footprintsFromModule = await getFootprintsFromModule(moduleConfig);
-        footprints = {...footprints, ...footprintsFromModule}
-    }
-    return footprints
-}
-
-async function getFootprintsFromModule(moduleConfig) {
-    const response = await fetchWhat(moduleConfig.what)
-    const data = yaml.load(response)
-    
-    let footprints = {}
-    for (const [name, content] of Object.entries(data)) {
-        const subFootprints = u.convertArrayFieldToObject(content, 'footprints')
-        for (const [name, footprintConfig] of Object.entries(subFootprints)) {
-            footprintConfig.where = u.merge(moduleConfig?.where, footprintConfig?.where);
-            footprintConfig.adjust = u.merge(moduleConfig?.adjust, footprintConfig?.adjust);
-            if (footprintConfig.side == null) {
-                footprintConfig.side = moduleConfig?.side;
-            }
-            footprints[name] = footprintConfig;
-        }
-        footprints = {...footprints, ...subFootprints};
-    }
-
-    if (moduleConfig.footprints) {
-        for (const [name, footprintConfig] of Object.entries(moduleConfig.footprints)) {
-            for (const [key, value] of Object.entries(footprintConfig)) {
-                if (!footprints[name]) {
-                    footprints[name] = {};
-                }
-                footprints[name][key] = value;
-
-            }
-        }
-    }
-    return footprints;
-
-}
-
-exports.parse = async (config, points, outlines, units) => {
+exports.parse = async (config, pcbs, outlines, units) => {
 
     a.typeCheck(config.pcbs || {}, 'pcbs', 'object')
-    const results = {}
-    results['pcbs'] = {};
+    const previews = {}
 
     for (const [pcb_name, pcb_config] of Object.entries(config.pcbs)) {
 
-        let pcb = results.pcbs[pcb_name] = {};
         let preview;
-
-
-        // outline conversion
         if (a.type(pcb_config.outlines)() == 'array') {
             pcb_config.outlines = {...pcb_config.outlines}
         }
         const config_outlines = a.typeCheck(pcb_config.outlines || {}, `pcbs.${pcb_name}.outlines`, 'object')
         const kicad_outlines = {}
         for (const [outline_name, outline] of Object.entries(config_outlines)) {
-
             const ref = a.in(outline.outline, `pcbs.${pcb_name}.outlines.${outline_name}.outline`, Object.keys(outlines))
             const layer = a.typeCheck(outline.layer || 'Edge.Cuts', `pcbs.${pcb_name}.outlines.${outline_name}.outline`, 'string')
-            const operation = u[a.in(outline.preview || 'stack', `${outline_name}.operation`, ['add', 'subtract', 'intersect', 'stack'])]
-            preview = operation(preview, outlines[ref])
+            const operation = u['stack']
+            preview = operation(preview, outlines[ref].yaml)
         }
 
-        const footprints = u.convertArrayFieldToObject(pcb_config, 'footprints');
-        const modules = await getFootprintsFromModules(pcb_config);
-
-        const allFootprints = { ...modules, ...footprints };
-        const newModules = {}; // 使用对象存储 modules
-        const newFootprints = {}; // 使用对象存储 footprints
+        const allFootprints = { ...pcbs[pcb_name].modules, ...pcbs[pcb_name].footprints };
 
         for (const [name, footprintConfig] of Object.entries(allFootprints)) {
             const footprintPath = `pcbs.${pcb_name}.footprints.${name}`;
             a.typeCheck(footprintConfig, footprintPath, 'object');
 
             try {
-                const isModule = name in modules;
+                const shape_maker = await footprint_shape(footprintConfig.config);
+                const point = new Point(footprintConfig.point);
 
-                // 检查重复 key
-                if (isModule && newModules[name]) {
-                    throw new Error(`Duplicate module key: ${name}`);
-                }
+                let [shape, bbox] = shape_maker();
+                shape = point.position(shape);
+                const operation = u['stack'];
+                preview = operation(preview, shape);
 
-                const where = filter(footprintConfig.where, `${footprintPath}.where`, points, units);
-                const originalAdjust = footprintConfig.adjust;
-                const adjust = start => anchor(originalAdjust || {}, `${footprintPath}.adjust`, points, start)(units);
-                const shape_maker = await footprint_shape(footprintConfig);
-
-                for (const w of where) {
-                    setFootprintInPoints(w, footprintConfig);
-                    const point = adjust(w.clone());
-
-                    // 检查 point.meta.index 是否存在
-                    if (!point.meta?.index) {
-                        throw new Error(`point.meta.index is undefined for footprint: ${name}`);
-                    }
-
-                    let [shape, bbox] = shape_maker();
-                    shape = point.position(shape);
-                    const operation = u[a.in(footprintConfig.preview || 'stack', `${footprintPath}.operation`, ['add', 'subtract', 'intersect', 'stack'])];
-                    preview = operation(preview, shape);
-
-                    const entry = { point, config: footprintConfig };
-
-                    if (isModule) {
-                        newModules[name] = entry; // 存储到 modules
-                    } else {
-                        const key = point.meta.index;
-                        if (newFootprints[name]?.[key]) {
-                            throw new Error(`Duplicate footprint key: ${key} for ${name}`);
-                        }
-                        // 初始化嵌套对象
-                        if (!newFootprints[name]) {
-                            newFootprints[name] = {};
-                        }
-                        newFootprints[name][key] = entry; // 存储到 footprints
-                    }
-                }
             } catch (error) {
                 console.error('Error placing footprint:', error);
             }
@@ -219,10 +120,8 @@ exports.parse = async (config, points, outlines, units) => {
             m.model.originate(preview);
         }
 
-        pcb['preview'] = preview;
-        pcb['modules'] = newModules;
-        pcb['footprints'] = newFootprints;
+        previews[pcb_name] = preview;
     }
 
-    return results
+    return previews;
 }
