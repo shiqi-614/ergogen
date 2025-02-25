@@ -102,6 +102,7 @@ const process = async (raw, debug=false, logger=()=>{}) => {
         results.pcbs[pcb_name] = {};
         results.pcbs[pcb_name]['preview'] = io.twodee(pcb_text.preview, debug);
         results.pcbs[pcb_name]['footprints'] = pcb_text.footprints;
+        results.pcbs[pcb_name]['modules'] = pcb_text.modules;
         empty = false;
     }
     results.points = points

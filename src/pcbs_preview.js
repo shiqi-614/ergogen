@@ -88,20 +88,15 @@ function setFootprintInPoints(w, footprintConfig) {
 
 }
 
-async function mergeFootprintsFromModules(pcb_name, pcb_config) {
-
-    pcb_config.footprints = u.convertArrayFieldToObject(pcb_config, 'footprints');
+async function getFootprintsFromModules(pcb_config) {
     pcb_config.modules = u.convertArrayFieldToObject(pcb_config, 'modules');
-
-    let footprints = pcb_config.footprints;
+    let footprints = {};
 
     for (const [name, moduleConfig] of Object.entries(pcb_config.modules)) {
         const footprintsFromModule = await getFootprintsFromModule(moduleConfig);
-
         footprints = {...footprints, ...footprintsFromModule}
     }
     return footprints
-
 }
 
 async function getFootprintsFromModule(moduleConfig) {
@@ -147,7 +142,6 @@ exports.parse = async (config, points, outlines, units) => {
 
         let pcb = results.pcbs[pcb_name] = {};
         let preview;
-        let footprints = pcb['footprints'] = {};
 
 
         // outline conversion
@@ -164,33 +158,70 @@ exports.parse = async (config, points, outlines, units) => {
             preview = operation(preview, outlines[ref])
         }
 
-        const allFootprints = await mergeFootprintsFromModules(pcb_name, pcb_config);
+        const footprints = u.convertArrayFieldToObject(pcb_config, 'footprints');
+        const modules = await getFootprintsFromModules(pcb_config);
+
+        const allFootprints = { ...modules, ...footprints };
+        const newModules = {}; // 使用对象存储 modules
+        const newFootprints = {}; // 使用对象存储 footprints
+
         for (const [name, footprintConfig] of Object.entries(allFootprints)) {
-            const footprintPath = `pcbs.${pcb_name}.footprints.${name}`
-            a.typeCheck(footprintConfig, footprintPath, 'object')
+            const footprintPath = `pcbs.${pcb_name}.footprints.${name}`;
+            a.typeCheck(footprintConfig, footprintPath, 'object');
+
             try {
-                footprints[name] = [];
-                const where = filter(footprintConfig.where, `${footprintPath}.where`, points, units)
-                const originalAdjust = footprintConfig.adjust // need to save, so the delete's don't get rid of it below
-                const adjust = start => anchor(originalAdjust || {}, `${footprintPath}.adjust`, points, start)(units)
-                const shape_maker = await footprint_shape(footprintConfig)
+                const isModule = name in modules;
+
+                // 检查重复 key
+                if (isModule && newModules[name]) {
+                    throw new Error(`Duplicate module key: ${name}`);
+                }
+
+                const where = filter(footprintConfig.where, `${footprintPath}.where`, points, units);
+                const originalAdjust = footprintConfig.adjust;
+                const adjust = start => anchor(originalAdjust || {}, `${footprintPath}.adjust`, points, start)(units);
+                const shape_maker = await footprint_shape(footprintConfig);
+
                 for (const w of where) {
-                    setFootprintInPoints(w, footprintConfig)
-                    const point = adjust(w.clone())
-                    let [shape, bbox] = shape_maker() 
-                    shape = point.position(shape) // ...actual positioning happens here
-                    const operation = u[a.in(footprintConfig.preview || 'stack', `${footprintPath}.operation`, ['add', 'subtract', 'intersect', 'stack'])]
-                    preview = operation(preview, shape)
-                    footprints[name].push({'point': point, 'config': footprintConfig});
-                }   
+                    setFootprintInPoints(w, footprintConfig);
+                    const point = adjust(w.clone());
+
+                    // 检查 point.meta.index 是否存在
+                    if (!point.meta?.index) {
+                        throw new Error(`point.meta.index is undefined for footprint: ${name}`);
+                    }
+
+                    let [shape, bbox] = shape_maker();
+                    shape = point.position(shape);
+                    const operation = u[a.in(footprintConfig.preview || 'stack', `${footprintPath}.operation`, ['add', 'subtract', 'intersect', 'stack'])];
+                    preview = operation(preview, shape);
+
+                    const entry = { point, config: footprintConfig };
+
+                    if (isModule) {
+                        newModules[name] = entry; // 存储到 modules
+                    } else {
+                        const key = point.meta.index;
+                        if (newFootprints[name]?.[key]) {
+                            throw new Error(`Duplicate footprint key: ${key} for ${name}`);
+                        }
+                        // 初始化嵌套对象
+                        if (!newFootprints[name]) {
+                            newFootprints[name] = {};
+                        }
+                        newFootprints[name][key] = entry; // 存储到 footprints
+                    }
+                }
             } catch (error) {
-                console.error('Error place footprint:', error);
+                console.error('Error placing footprint:', error);
             }
 
-            m.model.originate(preview)
-            // console.log("final PCB:" + JSON.stringify(results[pcb_name]));
+            m.model.originate(preview);
         }
+
         pcb['preview'] = preview;
+        pcb['modules'] = newModules;
+        pcb['footprints'] = newFootprints;
     }
 
     return results
