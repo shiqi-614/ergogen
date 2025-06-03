@@ -33,7 +33,12 @@ async function getFootprintsFromModules(pcb_config) {
 
     for (const [name, moduleConfig] of Object.entries(pcb_config.modules)) {
         const footprintsFromModule = await getFootprintsFromModule(moduleConfig);
-        footprints = {...footprints, ...footprintsFromModule}
+        // footprints = {...footprints, ...footprintsFromModule}
+        footprints[name] = {
+            what: moduleConfig.what,
+            where: moduleConfig.where,
+            footprints: footprintsFromModule
+        }
     }
     return footprints
 }
@@ -64,7 +69,7 @@ async function getFootprintsFromModule(moduleConfig) {
                     footprints[name] = {};
                 }
                 footprints[name][key] = value;
-
+                footprints[name][key]['override'] = true;
             }
         }
     }
@@ -73,58 +78,91 @@ async function getFootprintsFromModule(moduleConfig) {
 }
 
 exports.parse = async (config, points, units) => {
-
     a.typeCheck(config.pcbs || {}, 'pcbs', 'object')
     const pcbs = {}
 
     for (const [pcb_name, pcb_config] of Object.entries(config.pcbs)) {
-
         let pcb = pcbs[pcb_name] = {};
 
         const footprints = u.convertArrayFieldToObject(pcb_config, 'footprints');
         const modules = await getFootprintsFromModules(pcb_config);
 
-        const allFootprints = { ...modules, ...footprints };
-        const newModules = {}; // 使用对象存储 modules
-        const newFootprints = {}; // 使用对象存储 footprints
+        const newModules = {};
+        const newFootprints = {};
 
-        for (const [name, footprintConfig] of Object.entries(allFootprints)) {
-            const footprintPath = `pcbs.${pcb_name}.footprints.${name}`;
-            a.typeCheck(footprintConfig, footprintPath, 'object');
+        const processFootprintEntry = (entryName, footprintConfig, pathPrefix, isModule = false) => {
+            a.typeCheck(footprintConfig, pathPrefix, 'object');
 
-            try {
-                const isModule = name in modules;
+            const where = filter(footprintConfig.where, `${pathPrefix}.where`, points, units);
+            const originalAdjust = footprintConfig.adjust;
+            const adjust = start => anchor(originalAdjust || {}, `${pathPrefix}.adjust`, points, start)(units);
 
-                if (isModule && newModules[name]) {
-                    throw new Error(`Duplicate module key: ${name}`);
+            const entries = [];
+
+            for (const w of where) {
+                setFootprintInPoints(w, footprintConfig);
+                const point = adjust(w.clone());
+
+                if (!point.meta?.index) {
+                    throw new Error(`point.meta.index is undefined for: ${entryName}`);
                 }
 
-                const where = filter(footprintConfig.where, `${footprintPath}.where`, points, units);
-                const originalAdjust = footprintConfig.adjust;
-                const adjust = start => anchor(originalAdjust || {}, `${footprintPath}.adjust`, points, start)(units);
+                const key = isModule ? entryName : entryName + point.meta.index;
+                const entry = { point, config: footprintConfig };
+                entries.push({ key, entry });
+            }
 
-                for (const w of where) {
-                    setFootprintInPoints(w, footprintConfig);
-                    const point = adjust(w.clone());
+            return entries;
+        };
 
-                    if (!point.meta?.index) {
-                        throw new Error(`point.meta.index is undefined for footprint: ${name}`);
-                    }
+        // 处理模块 footprints
+        for (const [modName, modData] of Object.entries(modules)) {
+            const path = `pcbs.${pcb_name}.modules.${modName}`;
 
-                    const entry = { point, config: footprintConfig };
+            const moduleWhere = filter(modData.where, `${path}.where`, points, units);
 
-                    if (isModule) {
-                        newModules[name] = entry; 
-                    } else {
-                        const key = name + point.meta.index;
-                        if (key in newFootprints) {
-                            throw new Error(`Duplicate footprint key: ${key}`);
+            // 🚫 限制只允许一个 moduleWhere
+            if (moduleWhere.length !== 1) {
+                throw new Error(`Module '${modName}' must have exactly one 'where' point (got ${moduleWhere.length}).`);
+            }
+
+            const modulePoint = moduleWhere[0].clone();
+
+            if (!newModules[modName]) newModules[modName] = {};
+            newModules[modName]['point'] = modulePoint;
+            newModules[modName]['config'] = { what: modData.what };
+            newModules[modName]['footprints'] = {};
+
+            for (const [fpName, config] of Object.entries(modData.footprints)) {
+                const fpPath = `${path}.footprints.${fpName}`;
+                try {
+                    const entries = processFootprintEntry(fpName, config, fpPath, true);
+
+                    for (const { key, entry } of entries) {
+                        if (key in newModules[modName]['footprints']) {
+                            throw new Error(`Duplicate module footprint key: ${modName}.${key}`);
                         }
-                        newFootprints[key] = entry; 
+                        newModules[modName]['footprints'][key] = entry;
                     }
+                } catch (error) {
+                    console.error(`Error placing module footprint ${modName}.${fpName}:`, error);
+                }
+            }
+        }
+
+        // 处理普通 footprints
+        for (const [fpName, config] of Object.entries(footprints)) {
+            const path = `pcbs.${pcb_name}.footprints.${fpName}`;
+            try {
+                const entries = processFootprintEntry(fpName, config, path, false);
+                for (const { key, entry } of entries) {
+                    if (key in newFootprints) {
+                        throw new Error(`Duplicate footprint key: ${key}`);
+                    }
+                    newFootprints[key] = entry;
                 }
             } catch (error) {
-                console.error('Error placing footprint:', error);
+                console.error(`Error placing footprint ${fpName}:`, error);
             }
         }
 
@@ -132,5 +170,5 @@ exports.parse = async (config, points, units) => {
         pcb['footprints'] = newFootprints;
     }
 
-    return pcbs 
-}
+    return pcbs;
+};

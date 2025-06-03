@@ -98,7 +98,17 @@ exports.parse = async (config, pcbs, outlines, units) => {
             preview = operation(preview, outlines[ref].yaml)
         }
 
-        const allFootprints = { ...pcbs[pcb_name].modules, ...pcbs[pcb_name].footprints };
+        const allFootprints = {
+          ...pcbs[pcb_name].footprints,
+          ...Object.fromEntries(
+            Object.entries(pcbs[pcb_name].modules).flatMap(([modName, modData]) =>
+              Object.entries(modData.footprints).map(([fpKey, fpEntry]) => {
+                const combinedKey = `${modName}.${fpKey}`;
+                return [combinedKey, fpEntry];
+              })
+            )
+          )
+        };
 
         for (const [name, footprintConfig] of Object.entries(allFootprints)) {
             const footprintPath = `pcbs.${pcb_name}.footprints.${name}`;
