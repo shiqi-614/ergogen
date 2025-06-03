@@ -13,6 +13,7 @@ const template_types = require('./templates')
 
 const { fetchKicadMod, normalizeWhat, fetchWhat } = require('./kicad/fetcher');
 const kicad_shape_converter = require('./kicad/shape_converter')
+const { extractFootprints } = require('./kicad/extract_footprints')
 
 
 function setFootprintInPoints(w, footprintConfig) {
@@ -39,17 +40,18 @@ async function getFootprintsFromModules(pcb_config) {
 
 async function getFootprintsFromModule(moduleConfig) {
     const response = await fetchWhat(moduleConfig.what)
-    const data = yaml.load(response)
+    const data = extractFootprints(response)
     
     let footprints = {}
     for (const [name, content] of Object.entries(data)) {
         const subFootprints = u.convertArrayFieldToObject(content, 'footprints')
         for (const [name, footprintConfig] of Object.entries(subFootprints)) {
-            footprintConfig.where = u.merge(moduleConfig?.where, footprintConfig?.where);
-            footprintConfig.adjust = u.merge(moduleConfig?.adjust, footprintConfig?.adjust);
+            footprintConfig.where = u.mergeWhereFromParent(moduleConfig?.where, footprintConfig?.where);
+            // footprintConfig.adjust = u.merge(moduleConfig?.adjust, footprintConfig?.adjust);
             if (footprintConfig.side == null) {
                 footprintConfig.side = moduleConfig?.side;
             }
+            footprintConfig.what = normalizeWhat(footprintConfig.what);
             footprints[name] = footprintConfig;
         }
         footprints = {...footprints, ...subFootprints};

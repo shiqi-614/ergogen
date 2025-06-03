@@ -24,10 +24,15 @@ function parseContent(content) {
                     const section  = parseSection(currentContent);
                     if (section) {
                         const {key, data} = section;
-                        contentObjStack.push([key, data]);
-
-                        updateOrAppendToKey(curObj, key, data);
-                        curObj = data;
+                        if (typeof data === 'object' && data !== null) {
+                            // console.log("push key:" + key + " data: " + JSON.stringify(data))
+                            contentObjStack.push([key, data]);
+                            updateOrAppendToKey(curObj, key, data);
+                            curObj = data;
+                        } else {
+                            // console.log("not push key:" + key + " data: " + JSON.stringify(data))
+                            updateOrAppendToKey(curObj, key, data);
+                        }
                     }
                 } 
                 bracketStack.push(char);
@@ -38,19 +43,21 @@ function parseContent(content) {
                     const section  = parseSection(currentContent);
                     if (section) {
                         let {key, data} = section;
+                        // console.log("end key:" + key + " data: " + JSON.stringify(data))
                         updateOrAppendToKey(curObj, key, data);
                     }
                 } else {
                     if (contentObjStack.length > 0) {
-                        let [key, data] =  contentObjStack.pop();
-                        // console.log("pop");
-                        // console.log("key:" + key+ " obj:" + JSON.stringify(data, null, 2));
-                        [key, data] = contentObjStack[contentObjStack.length - 1];
-                        // console.log("cur");
-                        // console.log("key:" + key+ " obj:" + JSON.stringify(data, null, 2));
-                        
-                        // console.log("cur data2: " + JSON.stringify(data));
-                        curObj = data;
+                        contentObjStack.pop();  // 弹出当前作用域
+
+                        if (contentObjStack.length > 0) {
+                            const [key, data] = contentObjStack[contentObjStack.length - 1];
+                            if (typeof data === 'object' && data !== null) {
+                                curObj = data;
+                            }
+                        } else {
+                            curObj = result;  
+                        }
                     }
                 }
                 currentContent = '';
@@ -61,10 +68,8 @@ function parseContent(content) {
                 }
             }
         }
-
-
-        // console.log("root:" + JSON.stringify(result));
     }
+    // console.log("root:" + JSON.stringify(result));
 
     return result;
 }
@@ -105,7 +110,11 @@ function parseSection(section) {
                 return { key, data };
             case 'footprint':
                 data = {};
-                data['name'] = words[1] ? words[1]: '';
+                if (words.length >= 3) {
+                    data['name'] = `${words[1]}:${words[2]}`;
+                } else {
+                    data['name'] = words[1] || '';
+                }
                 return { key, data };
             case 'roundrect_rratio':
             case 'thickness':

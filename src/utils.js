@@ -52,6 +52,48 @@ function combineNumber(obj1, obj2) {
     return result;
 }
 
+function degToRad(deg) {
+    return deg * Math.PI / 180;
+}
+
+function rotateAroundCenter(point, center, angleDeg) {
+    const angle = degToRad(angleDeg);
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+
+    const dx = point[0] - center[0];
+    const dy = point[1] - center[1];
+
+    const rx = dx * cos - dy * sin;
+    const ry = dx * sin + dy * cos;
+
+    return [center[0] + rx, center[1] + ry];
+}
+
+const mergeWhereFromParent = exports.mergeWhereFromParent = (moduleWhere = {}, footprintWhere = {}) => {
+    const modShift = moduleWhere.shift || [0, 0];
+    const modRotate = moduleWhere.rotate || 0;
+
+    const fpShift = footprintWhere.shift || [0, 0];
+    const fpRotate = footprintWhere.rotate || 0;
+
+    // 计算 footprint 的 shift 在 module 中旋转之后的位置（以 modShift 为中心）
+    const fpShiftRotated = rotateAroundCenter(
+        [modShift[0] + fpShift[0], modShift[1] + fpShift[1]],
+        modShift,
+        modRotate
+    );
+
+    // 总旋转角度是 module + footprint
+    const mergedRotate = modRotate + fpRotate;
+
+    return {
+        ref: moduleWhere.ref,
+        shift: fpShiftRotated,
+        rotate: mergedRotate
+    };
+}
+
 const deep = exports.deep = (obj, key, val) => {
     const levels = key.split('.')
     const last = levels.pop()
