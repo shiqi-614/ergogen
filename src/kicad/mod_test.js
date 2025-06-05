@@ -24,7 +24,8 @@ function saveJsonContent(filePath, jsonContent) {
 // console.log('Found .kicad_mod files:');
 // console.log(kicadModFiles);
 //
-const kicadModFiles = ["/Users/jinsongc/Development/ErgoCai.pretty/nRF52840_holyiot_18010.kicad_mod"];
+// const kicadModFiles = ["/Users/jinsongc/Development/ErgoCai.pretty/nRF52840_holyiot_18010.kicad_mod"];
+const kicadModFiles = ["/Users/jinsongc/Development/ErgoCai.modules/battery/default_battery/default_battery.kicad_pcb"];
 
 kicadModFiles.forEach(filePath => {
     try {

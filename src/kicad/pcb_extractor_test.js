@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { extractFootprints } = require('./extract_footprints');
+const { parsePcbContent } = require('./pcb_extractor');
 
 // 将解析后的JSON内容保存到 .kicad_mod 文件所在目录的 json 文件夹
 function saveJsonContent(filePath, jsonContent) {
@@ -30,7 +30,7 @@ kicadPcbFiles.forEach(filePath => {
     try {
         console.log("parsing file: " + filePath);
         const content = fs.readFileSync(filePath, 'utf-8');
-        const jsonContent = extractFootprints(content);
+        const jsonContent = parsePcbContent(content);
         saveJsonContent(filePath, jsonContent);
     } catch (e) {
         console.log("cannot handle file: " + filePath);

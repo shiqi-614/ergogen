@@ -1,20 +1,13 @@
 const { parseContent } = require('./mod_parser');
 
-/**
- * 提取所有 footprint 信息
- * @param {string} pcbContent - KiCad PCB 文件内容（文本）
- * @returns {Array<Object>} 所有 footprint 的数组
- */
 
-function extractFootprints(pcbContent) {
-    const parsed = parseContent(pcbContent);
+function convert2Array(item) {
+    if (!item) return [];
+    return  Array.isArray(item) ? item : [item];
+}
 
-    if (!parsed.footprint) return [];
-
-    const footprintsRaw = parsed.footprint;
-
-    // 有可能是单个对象，也可能是数组
-    const footprints = Array.isArray(footprintsRaw) ? footprintsRaw : [footprintsRaw];
+function extractFootprints(footprintRaw) {
+    const footprints = convert2Array(footprintRaw);
 
     const result = {};
 
@@ -23,6 +16,7 @@ function extractFootprints(pcbContent) {
         const valueObj = (fp.property || fp.fp_text || []).find(p => p.Value);
 
         const reference = referenceObj?.Reference || 'UNKNOWN';
+        console.log("reference:" + reference)
         const value = valueObj?.Value;
 
         const [rawRepo, rawFile] = fp.name.includes(':') ? fp.name.split(':') : ['unknown', fp.name];
@@ -52,14 +46,28 @@ function extractFootprints(pcbContent) {
             side: side
         };
     }
+    return result;
+}
+
+function parsePcbContent(pcbContent) {
+    const parsed = parseContent(pcbContent);
+
+
+    const footprints = extractFootprints(parsed.footprint);
+    const segments = convert2Array(parsed.segment);
+    const vias = convert2Array(parsed.via);
+
+    // 有可能是单个对象，也可能是数组
 
     return {
-        kicad: {
-            footprints: result
+        module: {
+            footprints: footprints,
+            segments: segments,
+            vias: vias
         }
     };
 }
 
-module.exports = { extractFootprints };
+module.exports = { parsePcbContent };
 
 

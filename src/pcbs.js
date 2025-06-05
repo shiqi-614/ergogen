@@ -132,6 +132,8 @@ exports.parse = async (config, points, units) => {
             newModules[modName]['point'] = modulePoint;
             newModules[modName]['config'] = { what: modData.what };
             newModules[modName]['footprints'] = {};
+            newModules[modName]['segments'] = {};
+            newModules[modName]['vias'] = {};
 
             for (const [fpName, config] of Object.entries(modData.footprints)) {
                 const fpPath = `${path}.footprints.${fpName}`;
