@@ -13,7 +13,7 @@ const template_types = require('./templates')
 
 const { fetchKicadMod, normalizeWhat, fetchWhat } = require('./kicad/fetcher');
 const kicad_shape_converter = require('./kicad/shape_converter')
-const { extractFootprints } = require('./kicad/extract_footprints')
+const { parsePcbContent } = require('./kicad/pcb_extractor')
 
 
 function setFootprintInPoints(w, footprintConfig) {
@@ -24,42 +24,53 @@ function setFootprintInPoints(w, footprintConfig) {
         const type = footprintConfig.meta.type;
         w.meta.footprints[type] = normalizeWhat(footprintConfig.what);
     }
-
 }
 
-async function getFootprintsFromModules(pcb_config) {
+function transformPoint(point, wherePoint) {
+    const dx = wherePoint.x;
+    const dy = wherePoint.y * -1;
+    const angle = wherePoint.r;
+    const angleRad = (angle * Math.PI) / 180;
+    const x = point.x;
+    const y = point.y;
+
+    return {
+        x: dx + (x * Math.cos(angleRad) - y * Math.sin(angleRad)),
+        y: dy + (x * Math.sin(angleRad) + y * Math.cos(angleRad)),
+    };
+}
+
+async function getModulesFromPcb(pcb_config) {
     pcb_config.modules = u.convertArrayFieldToObject(pcb_config, 'modules');
-    let footprints = {};
+    let modules = {};
 
     for (const [name, moduleConfig] of Object.entries(pcb_config.modules)) {
-        const footprintsFromModule = await getFootprintsFromModule(moduleConfig);
-        // footprints = {...footprints, ...footprintsFromModule}
-        footprints[name] = {
+        const response = await fetchWhat(moduleConfig.what)
+        const data = parsePcbContent(response)
+        const footprintsFromModule = await getFootprintsFromModule(moduleConfig, data);
+        modules[name] = {
             what: moduleConfig.what,
             where: moduleConfig.where,
-            footprints: footprintsFromModule
+            footprints: footprintsFromModule,
+            segments: data.module.segments,
+            vias: data.module.vias
         }
     }
-    return footprints
+    return modules;
 }
 
-async function getFootprintsFromModule(moduleConfig) {
-    const response = await fetchWhat(moduleConfig.what)
-    const data = extractFootprints(response)
-    
+async function getFootprintsFromModule(moduleConfig, data) {
     let footprints = {}
     for (const [name, content] of Object.entries(data)) {
         const subFootprints = u.convertArrayFieldToObject(content, 'footprints')
         for (const [name, footprintConfig] of Object.entries(subFootprints)) {
             footprintConfig.where = u.mergeWhereFromParent(moduleConfig?.where, footprintConfig?.where);
             // footprintConfig.adjust = u.merge(moduleConfig?.adjust, footprintConfig?.adjust);
-            if (footprintConfig.side == null) {
-                footprintConfig.side = moduleConfig?.side;
-            }
             footprintConfig.what = normalizeWhat(footprintConfig.what);
             footprints[name] = footprintConfig;
         }
         footprints = {...footprints, ...subFootprints};
+
     }
 
     if (moduleConfig.footprints) {
@@ -69,7 +80,6 @@ async function getFootprintsFromModule(moduleConfig) {
                     footprints[name] = {};
                 }
                 footprints[name][key] = value;
-                footprints[name][key]['override'] = true;
             }
         }
     }
@@ -85,7 +95,7 @@ exports.parse = async (config, points, units) => {
         let pcb = pcbs[pcb_name] = {};
 
         const footprints = u.convertArrayFieldToObject(pcb_config, 'footprints');
-        const modules = await getFootprintsFromModules(pcb_config);
+        const modules = await getModulesFromPcb(pcb_config);
 
         const newModules = {};
         const newFootprints = {};
@@ -132,6 +142,22 @@ exports.parse = async (config, points, units) => {
             newModules[modName]['point'] = modulePoint;
             newModules[modName]['config'] = { what: modData.what };
             newModules[modName]['footprints'] = {};
+
+
+            // 转换 segments
+            const transformedSegments = (modData.segments || []).map(seg => ({
+                ...seg,
+                start: transformPoint(seg.start, modulePoint),
+                end: transformPoint(seg.end, modulePoint)
+            }));
+            newModules[modName]['segments'] = transformedSegments;
+
+            // 转换 vias
+            const transformedVias = (modData.vias || []).map(via => ({
+                ...via,
+                at: transformPoint(via.at, modulePoint)
+            }));
+            newModules[modName]['vias'] = transformedVias;
 
             for (const [fpName, config] of Object.entries(modData.footprints)) {
                 const fpPath = `${path}.footprints.${fpName}`;
