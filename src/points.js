@@ -70,7 +70,7 @@ const fillNameByTemplate = (key, zone, zoneName, col, colName, row, units) => {
     });
 };
 
-const renderZone = (zoneName, zone, zoneAnchor, globalKey, units) => {
+const renderZone = (zoneName, zone, zoneAnchor, globalKey, units, totalCnt) => {
     const cols = ensureObject(zone.columns, `points.zones.${zoneName}.columns`);
     const zoneRows = ensureObject(zone.rows, `points.zones.${zoneName}.rows`);
     const zoneKey = ensureObject(zone.key, `points.zones.${zoneName}.key`);
@@ -78,7 +78,6 @@ const renderZone = (zoneName, zone, zoneAnchor, globalKey, units) => {
     const points = {};
     const rotations = [{ angle: zoneAnchor.r, origin: zoneAnchor.p }];
     zoneAnchor.r = 0; // Clear rotation
-
 
     let firstCol = true;
     Object.entries(cols).forEach(([colName, col]) => {
@@ -125,6 +124,9 @@ const renderZone = (zoneName, zone, zoneAnchor, globalKey, units) => {
 
             points[key.name] = point;
             point.meta = key;
+            if (!point.meta.skip) {
+                point.meta.index = ++totalCnt;
+            }
 
             runningAnchor.shift([0, key.padding])
 
@@ -173,6 +175,7 @@ exports.parse = (config, units) => {
     let points = {}
 
     // rendering zones
+    let totalKeyNumber= 0
     for (let [zone_name, zone] of Object.entries(zones)) {
 
         // zone sanitization
@@ -187,7 +190,8 @@ exports.parse = (config, units) => {
         delete zone.mirror
 
         // creating new points
-        let new_points = renderZone(zone_name, zone, anchor, global_key, units)
+        let new_points = renderZone(zone_name, zone, anchor, global_key, units, totalKeyNumber)
+        totalKeyNumber += Object.keys(new_points).length;
 
         // simplifying the names in individual point "zones" and single-key columns
         while (Object.keys(new_points).some(k => k.endsWith('_default'))) {
@@ -251,11 +255,9 @@ exports.parse = (config, units) => {
     points = Object.assign(points, global_mirrored_points)
 
     // removing temporary points
-    let index = 1;
     const filtered = {};
     for (const [k, p] of Object.entries(points)) {
         if (p.meta.skip) continue
-        p.meta.index = index++;
         filtered[k] = p
     }
     // done
