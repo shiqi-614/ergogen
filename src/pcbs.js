@@ -26,18 +26,29 @@ function setFootprintInPoints(w, footprintConfig) {
     }
 }
 
-function transformPoint(point, wherePoint) {
-    const dx = wherePoint.x;
-    const dy = wherePoint.y * -1;
-    const angle = wherePoint.r;
-    const angleRad = (angle * Math.PI) / 180;
-    const x = point.x;
-    const y = point.y;
+function transformPoint(point, wherePoint, layer = "") {
+    try {
+        const dx = wherePoint.x;
+        const dy = wherePoint.y * -1;
+        let angle = wherePoint.r || 0;  // Changed from const to let
+        const x = point.x;
+        const y = point.y;
 
-    return {
-        x: dx + (x * Math.cos(angleRad) - y * Math.sin(angleRad)),
-        y: dy + (x * Math.sin(angleRad) + y * Math.cos(angleRad)),
-    };
+        // 仅当 layer 明确为 "B.Cu" 时反转角度
+        if (layer === "B.Cu") {
+            angle *= -1;
+        }
+
+        const angleRad = (angle * Math.PI) / 180;
+
+        return {
+            x: dx + (x * Math.cos(angleRad) - y * Math.sin(angleRad)),  // Added missing parenthesis
+            y: dy + (x * Math.sin(angleRad) + y * Math.cos(angleRad))
+        };
+    } catch (error) {
+        console.error("Error in transformPoint:", error);
+        throw error;
+    }
 }
 
 async function getModulesFromPcb(pcb_config) {
@@ -143,12 +154,11 @@ exports.parse = async (config, points, units) => {
             newModules[modName]['config'] = { what: modData.what };
             newModules[modName]['footprints'] = {};
 
-
             // 转换 segments
             const transformedSegments = (modData.segments || []).map(seg => ({
                 ...seg,
-                start: transformPoint(seg.start, modulePoint),
-                end: transformPoint(seg.end, modulePoint)
+                start: transformPoint(seg.start, modulePoint, seg.layer),
+                end: transformPoint(seg.end, modulePoint, seg.layer)
             }));
             newModules[modName]['segments'] = transformedSegments;
 
