@@ -25,7 +25,7 @@ function normalizeWhat(what) {
     if ('string' === typeof what) {
         return {
             github: {
-                repo: 'shiqi-614/ErgoCai.pretty',
+                repo: 'shiqi-614/ErgoCaiLib',
                 file: what
             }
         };

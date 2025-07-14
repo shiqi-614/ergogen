@@ -21,8 +21,8 @@ function extractFootprints(footprintRaw) {
 
         const [rawRepo, rawFile] = fp.name.includes(':') ? fp.name.split(':') : ['unknown', fp.name];
 
-        const repo = `shiqi-614/${rawRepo}`;
-        const file = `${rawFile}.kicad_mod`;
+        const repo = `shiqi-614/ErgoCaiLib/`;
+        const file = `footprints/${rawRepo}/${rawFile}.kicad_mod`;
 
         let side = ""
         if (fp.layer === "F.Cu") {
