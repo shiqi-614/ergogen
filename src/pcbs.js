@@ -16,14 +16,11 @@ const kicad_shape_converter = require('./kicad/shape_converter')
 const { parsePcbContent } = require('./kicad/pcb_extractor')
 
 
-function setFootprintInPoints(w, footprintConfig) {
-    if (footprintConfig.meta && footprintConfig.meta.type) {
-        if (!w.meta.footprints) {
-            w.meta.footprints = {};
-        }
-        const type = footprintConfig.meta.type;
-        w.meta.footprints[type] = normalizeWhat(footprintConfig.what);
+function setFootprintInPoints(w, fpName, footprintConfig) {
+    if (!w.meta.footprints) {
+        w.meta.footprints = {};
     }
+    w.meta.footprints[fpName] = normalizeWhat(footprintConfig.what);
 }
 
 function transformPoint(point, wherePoint, layer = "") {
@@ -34,10 +31,7 @@ function transformPoint(point, wherePoint, layer = "") {
         const x = point.x;
         const y = point.y;
 
-        // 仅当 layer 明确为 "B.Cu" 时反转角度
-        if (layer === "B.Cu") {
-            angle *= -1;
-        }
+        angle *= -1;
 
         const angleRad = (angle * Math.PI) / 180;
 
@@ -121,7 +115,7 @@ exports.parse = async (config, points, units) => {
             const entries = [];
 
             for (const w of where) {
-                setFootprintInPoints(w, footprintConfig);
+                setFootprintInPoints(w, entryName, footprintConfig);
                 const point = adjust(w.clone());
 
                 if (!point.meta?.index) {

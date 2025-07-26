@@ -18,10 +18,6 @@ const processBasic = async (raw, debug=false, logger=()=>{}) => {
     let empty = true
     let [config, format] = io.interpret(raw, logger)
     let suffix = format
-    if (format == 'KLE') {
-        suffix = `${format} (Auto-debug)`
-        debug = true
-    }
     logger(prefix + suffix)
     
     logger('Preprocessing input...')
