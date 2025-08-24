@@ -154,6 +154,18 @@ class RectStrategy {
     }
 }
 
+class FpRectStrategy {
+    convert(item) {
+        var key = getId('fp_rect', item);
+        var rect = new m.models.Rectangle(
+            item.end.x - item.start.x, 
+            item.end.y - item.start.y 
+        )
+        rect.origin = [item.start.x, item.start.y];
+        return {[key]: rect};
+    }
+}
+
 class FpPolyStrategy {
     convert(item) {
         var key = getId('fpPoly', item);
@@ -191,6 +203,8 @@ class ShapeConverter {
             case 'arc':
             case 'fp_arc': // 共享 ArcStrategy
                 return this._initializeStrategy('arc', ArcStrategy);
+            case 'fp_rect':
+                return this._initializeStrategy('fp_rect', FpRectStrategy);
             case 'rect':
                 return this._initializeStrategy('rect', RectStrategy);
             case 'fp_circle':
@@ -257,7 +271,8 @@ const SUPPORTED_KICAD_FOOTPRINT_ATTRIBUTES = new Set([
     "fp_circle",
     "pad", // pad struct have shape property, will use shape to get converter
     "fp_arc",
-    "fp_poly"
+    "fp_poly",
+    "fp_rect"
 ]);
 
 exports.convert = (footprint) => {
