@@ -38,6 +38,7 @@ const processBasic = async (raw, debug=false, logger=()=>{}) => {
             throw new Error(`Current ergogen version (${version}) doesn\'t satisfy config's engine requirement (${config.meta.engine})!`)
         }
     }
+    results.config = config;
 
     logger('Calculating variables...')
     const units = units_lib.parse(config)
@@ -67,15 +68,6 @@ const processBasic = async (raw, debug=false, logger=()=>{}) => {
         empty = false
     }
 
-    logger('Modeling cases...')
-    const cases = cases_lib.parse(config.cases || {}, outlines, units)
-    results.cases = {}
-    for (const [case_name, case_script] of Object.entries(cases)) {
-        if (!debug && case_name.startsWith('_')) continue
-        results.cases[case_name] = {jscad: case_script}
-        empty = false
-    }
-
     logger('Scaffolding PCBs...')
     const pcbs = await pcbs_lib.parse(config, points, units)
     results.pcbs = {}
@@ -99,7 +91,7 @@ const process = async (raw, debug=false, logger=()=>{}) => {
     const previews = await pcbs_preview_lib.parse(results.canonical, results.pcbs, results.outlines, results.units)
     for (const [pcb_name, preview] of Object.entries(previews)) {
         console.log("preview: " + pcb_name);
-        results.pcbs[pcb_name]['preview'] = io.twodee(preview, debug);
+        results.pcbs[pcb_name]['preview'] = io.twodee(preview['preview'], debug);
     }
     results.demo = io.twodee(points_lib.visualize(results.points, results.units), debug);
 
@@ -130,6 +122,14 @@ const process = async (raw, debug=false, logger=()=>{}) => {
         } catch (error) {
             console.error('There was a problem with the fetch operation:', error);
         }
+    }
+
+    logger('Modeling cases...')
+    const cases = await cases_lib.parse(results.config.cases || {}, results.outlines, previews, results.units)
+    results.cases = {}
+    for (const [case_name, case_script] of Object.entries(cases)) {
+        if (!debug && case_name.startsWith('_')) continue
+        results.cases[case_name] = {jscad: case_script}
     }
     return results;
 }

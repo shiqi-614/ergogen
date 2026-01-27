@@ -2,13 +2,55 @@ const m = require('makerjs')
 const a = require('./assert')
 const o = require('./operation')
 
-exports.parse = (config, outlines, units) => {
+const Point = require('./point')
+const footprint_shape = require('./kicad/footprint_shape')
+
+// 另一种更简洁的版本（使用现代JavaScript特性）
+function resolveFromDict(dict, pattern) {
+    // 清理输入
+    pattern = pattern.trim();
+    
+    // 直接匹配模式
+    if (!pattern.startsWith('/')) {
+        const value = dict[pattern];
+        return value !== undefined 
+            ? [{ key: pattern, value: value }] 
+            : [];
+    }
+    
+    // 正则匹配模式
+    const regexStr = pattern.slice(1).trim();
+    let regex;
+    
+    try {
+        const parts = regexStr.split('/');
+        const flags = parts.length > 1 ? parts.pop() : '';
+        const regexPattern = parts.join('/').trim();
+        regex = new RegExp(regexPattern, flags);
+    } catch (error) {
+        console.error(`无效的正则表达式: ${pattern}`, error);
+        return [];
+    }
+    
+    // 使用Object.entries和filter简化代码
+    return Object.entries(dict)
+        .filter(([key]) => regex.test(key))
+        .map(([key, value]) => ({key, value}));
+}
+
+exports.parse = async (config, outlines, previews, units) => {
 
     const cases_config = a.sane(config, 'cases', 'object')()
 
     const scripts = {}
     const cases = {}
     const results = {}
+    const footprints = {}
+    for (let [pcb, data] of Object.entries(previews)) {
+        for (let [footprint, obj] of Object.entries(data['footprints'])) {
+            footprints[`${pcb}.${footprint}`] = obj;
+        }
+    }
 
     const resolve = (case_name, resolved_scripts=new Set(), resolved_cases=new Set()) => {
         for (const o of Object.values(cases[case_name].outline_dependencies)) {
@@ -64,25 +106,40 @@ exports.parse = (config, outlines, units) => {
             const rotate = a.numarr(part.rotate || [0, 0, 0], `${part_qname}.rotate`, 3)(units)
             const operation = a.in(part.operation || 'add', `${part_qname}.operation`, ['add', 'subtract', 'intersect'])
 
-            let base
-            if (what == 'outline') {
-                const extrude = a.sane(part.extrude || 1, `${part_qname}.extrude`, 'number')(units)
-                const outline = outlines[name]
-                a.assert(outline, `Field "${part_qname}.name" does not name a valid outline!`)
-                // This is a hack to separate multiple calls to the same outline with different extrude values
-                // I know it needlessly duplicates a lot of code, but it's the quickest fix in the short term
-                // And on the long run, we'll probably be moving to CADQuery anyway...
-                const extruded_name = `${name}_extrude_` + ('' + extrude).replace(/\D/g, '_')
-                if (!scripts[extruded_name]) {
-                    scripts[extruded_name] = m.exporter.toJscadScript(outline, {
-                        functionName: `${extruded_name}_outline_fn`,
-                        extrude: extrude,
-                        indent: 4
-                    })
+            let base;
+            if (what === 'outline' || what === 'pcb') {
+                const sourceDict = what === 'outline' ? outlines : footprints;
+                const results = resolveFromDict(sourceDict, name);
+                let outline;
+                for (let result of results) {
+                    const key = result.key;
+                    if (what === 'pcb') {
+                        const shape_maker = await footprint_shape.parse(result.config, "F.CrtYd");
+                        const point = new Point(result.point);
+
+                        let [shape, bbox] = shape_maker();
+                        outline = point.position(shape);
+                    } else {
+                        outline = result.value.yaml.models.export;
+                    }
+
+                    const extrude = a.sane(part.extrude || 1, `${part_qname}.${key}.extrude`, 'number')(units)
+                    a.assert(outline, `Field "${part_qname}.name" does not name a valid outline!`)
+                    // This is a hack to separate multiple calls to the same outline with different extrude values
+                    // I know it needlessly duplicates a lot of code, but it's the quickest fix in the short term
+                    // And on the long run, we'll probably be moving to CADQuery anyway...
+                    const extruded_name = `${part_qname}.${key}_extrude_` + ('' + extrude).replace(/\D/g, '_')
+                    if (!scripts[extruded_name]) {
+                        scripts[extruded_name] = m.exporter.toJscadScript(outline, {
+                            functionName: `${extruded_name}_outline_fn`,
+                            extrude: extrude,
+                            indent: 4
+                        })
+                    }
+                    outline_dependencies.push(extruded_name)
+                    base = `${extruded_name}_outline_fn()`
                 }
-                outline_dependencies.push(extruded_name)
-                base = `${extruded_name}_outline_fn()`
-            } else {
+            }  else {
                 a.assert(part.extrude === undefined, `Field "${part_qname}.extrude" should not be used when what=case!`)
                 a.in(name, `${part_qname}.name`, Object.keys(cases))
                 case_dependencies.push(name)

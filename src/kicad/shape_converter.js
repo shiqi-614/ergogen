@@ -275,25 +275,34 @@ const SUPPORTED_KICAD_FOOTPRINT_ATTRIBUTES = new Set([
     "fp_rect"
 ]);
 
-exports.convert = (footprint) => {
-    // console.log("footpritn item:" + JSON.stringify(item));
-    // const real_shape = item.shape||shape;
-    // console.log("real shape: " + real_shape);
-
-    // console.log("footprint");   
-    // console.log(JSON.stringify(footprint, null, 2));
+exports.convert = (footprint, filterLayers = null) => {
     var allItems = {};
+    
     Object.entries(footprint).forEach(([key, value]) => {
         if(SUPPORTED_KICAD_FOOTPRINT_ATTRIBUTES.has(key)) {
             const valueList = Array.isArray(value) 
                 ? value
                 : [value];
-            const convertedList = valueList
-                .filter(layerCheck) 
+            
+            // 过滤指定的层
+            const filteredList = valueList.filter(item => {
+                // 首先执行原有的 layerCheck
+                if (!layerCheck(item)) return false;
+                
+                // 如果有 layerFilter 参数，进一步过滤
+                if (filterLayers && item.layer) {
+                    // 支持数组或单个字符串
+                    const layers = Array.isArray(filterLayers) ? filterLayers : [filterLayers];
+                    return layers.includes(item.layer);
+                }
+                
+                return true;
+            });
+            
+            const convertedList = filteredList
                 .flatMap(item => shape_converter.convert(item, key)); 
 
             allItems = { ...allItems, ...Object.assign({}, ...convertedList) };
-
         }
     });
 
@@ -310,5 +319,4 @@ exports.convert = (footprint) => {
         }
     }
     return [pathItems, modelItems];
-
 }

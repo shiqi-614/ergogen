@@ -12,8 +12,7 @@ const filter = require('./filter').parse
 const footprint_types = require('./footprints')
 const template_types = require('./templates')
 
-const { fetchKicadMod, normalizeWhat, fetchWhat } = require('./kicad/fetcher');
-const kicad_shape_converter = require('./kicad/shape_converter')
+const footprint_shape = require('./kicad/footprint_shape')
 
 const outline = (config, name, points, outlines, units) => {
     // prepare params
@@ -29,53 +28,6 @@ const outline = (config, name, points, outlines, units) => {
         return [o, bbox]
     }, units]
 } 
-
-function flipVertically(res) {
-    // 遍历 models 并垂直翻转
-    if (res.models) {
-        for (let key in res.models) {
-            if (res.models.hasOwnProperty(key)) {
-                res.models[key] = m.model.mirror(res.models[key], true, false); // 垂直翻转
-                res.models[key] = m.model.rotate(res.models[key], 180);
-            }
-        }
-    }
-
-    // 遍历 paths 并垂直翻转
-    if (res.paths) {
-        for (let key in res.paths) {
-            if (res.paths.hasOwnProperty(key)) {
-                res.paths[key] = m.path.mirror(res.paths[key], true, false); // 垂直翻转
-                res.paths[key] = m.path.rotate(res.paths[key], 180);
-            }
-        }
-    }
-
-    return res;
-}
-
-async function footprint_shape(footprintConfig) {
-    console.log("draw footprint: " + footprintConfig.what);
-    const jsonObj = await fetchKicadMod(footprintConfig.what);
-
-    // console.log(JSON.stringify(jsonObj, null, 2));
-    let [pathItems, modelItems] = kicad_shape_converter.convert(jsonObj.footprint);
-    return () => {
-        const res = {
-            models: u.deepcopy(modelItems),
-            paths: u.deepcopy(pathItems)
-        };
-        if (footprintConfig.side && footprintConfig.side.toLowerCase() === "back") {
-            res.layer = "olive";
-            flipVertically(res);
-        } else {
-            res.layer = "aqua";
-        }
-        // console.log("res:" + JSON.stringify(res, null, 2));
-        const bbox = m.measure.modelExtents(o);
-        return [res, bbox]
-    };
-}
 
 
 exports.parse = async (config, pcbs, outlines, units) => {
@@ -99,11 +51,15 @@ exports.parse = async (config, pcbs, outlines, units) => {
         }
 
         const allFootprints = {
-          ...pcbs[pcb_name].footprints,
+          ...Object.fromEntries(
+              Object.entries(pcbs[pcb_name].footprints || {}).map(([fpKey, fpEntry]) => {
+                return [`footprints.${fpKey}`, fpEntry];
+              })
+            ),
           ...Object.fromEntries(
             Object.entries(pcbs[pcb_name].modules).flatMap(([modName, modData]) =>
               Object.entries(modData.footprints).map(([fpKey, fpEntry]) => {
-                const combinedKey = `${modName}.${fpKey}`;
+                const combinedKey = `modules.${modName}.${fpKey}`;
                 return [combinedKey, fpEntry];
               })
             )
@@ -111,11 +67,11 @@ exports.parse = async (config, pcbs, outlines, units) => {
         };
 
         for (const [name, footprintConfig] of Object.entries(allFootprints)) {
-            const footprintPath = `pcbs.${pcb_name}.footprints.${name}`;
+            const footprintPath = `pcbs.${pcb_name}.${name}`;
             a.typeCheck(footprintConfig, footprintPath, 'object');
 
             try {
-                const shape_maker = await footprint_shape(footprintConfig.config);
+                const shape_maker = await footprint_shape.parse(footprintConfig.config);
                 const point = new Point(footprintConfig.point);
 
                 let [shape, bbox] = shape_maker();
@@ -130,7 +86,10 @@ exports.parse = async (config, pcbs, outlines, units) => {
             m.model.originate(preview);
         }
 
-        previews[pcb_name] = preview;
+        previews[pcb_name] = {
+            'preview': preview,
+            'footprints': allFootprints
+        };
     }
 
     return previews;
