@@ -1,41 +1,48 @@
+
 const m = require('makerjs')
 const a = require('./assert')
 const o = require('./operation')
-
 const Point = require('./point')
 const footprint_shape = require('./kicad/footprint_shape')
 
-// 另一种更简洁的版本（使用现代JavaScript特性）
+function rectFromExtents(ext) {
+  const w = ext.high[0] - ext.low[0]
+  const h = ext.high[1] - ext.low[1]
+
+  const rect = new m.models.Rectangle(w, h)
+
+  // Rectangle 默认左下角在 (0,0)
+  m.model.move(rect, ext.low)
+
+  return rect
+}
+
 function resolveFromDict(dict, pattern) {
-    // 清理输入
     pattern = pattern.trim();
-    
-    // 直接匹配模式
+
     if (!pattern.startsWith('/')) {
         const value = dict[pattern];
-        return value !== undefined 
-            ? [{ key: pattern, value: value }] 
+        return value !== undefined
+            ? [{ key: pattern, value }]
             : [];
     }
-    
-    // 正则匹配模式
+
     const regexStr = pattern.slice(1).trim();
     let regex;
-    
+
     try {
         const parts = regexStr.split('/');
         const flags = parts.length > 1 ? parts.pop() : '';
         const regexPattern = parts.join('/').trim();
         regex = new RegExp(regexPattern, flags);
-    } catch (error) {
-        console.error(`无效的正则表达式: ${pattern}`, error);
+    } catch (e) {
+        console.error(`Invalid regex: ${pattern}`, e);
         return [];
     }
-    
-    // 使用Object.entries和filter简化代码
+
     return Object.entries(dict)
         .filter(([key]) => regex.test(key))
-        .map(([key, value]) => ({key, value}));
+        .map(([key, value]) => ({ key, value }));
 }
 
 exports.parse = async (config, outlines, previews, units) => {
@@ -45,6 +52,7 @@ exports.parse = async (config, outlines, previews, units) => {
     const scripts = {}
     const cases = {}
     const results = {}
+
     const footprints = {}
     for (let [pcb, data] of Object.entries(previews)) {
         for (let [footprint, obj] of Object.entries(data['footprints'])) {
@@ -52,14 +60,17 @@ exports.parse = async (config, outlines, previews, units) => {
         }
     }
 
-    const resolve = (case_name, resolved_scripts=new Set(), resolved_cases=new Set()) => {
+    const resolve = (case_name, resolved_scripts = new Set(), resolved_cases = new Set()) => {
         for (const o of Object.values(cases[case_name].outline_dependencies)) {
             resolved_scripts.add(o)
         }
         for (const c of Object.values(cases[case_name].case_dependencies)) {
-            resolved_cases.add(c)
-            resolve(c, resolved_scripts, resolved_cases)
+            if (!resolved_cases.has(c)) {
+                resolved_cases.add(c)
+                resolve(c, resolved_scripts, resolved_cases)
+            }
         }
+
         const result = []
         for (const o of resolved_scripts) {
             result.push(scripts[o] + '\n\n')
@@ -69,86 +80,129 @@ exports.parse = async (config, outlines, previews, units) => {
         }
         result.push(cases[case_name].body)
         result.push(`
-        
             function main() {
                 return ${case_name}_case_fn();
             }
-
         `)
+
         return result.join('')
     }
 
     for (let [case_name, case_config] of Object.entries(cases_config)) {
 
-        // config sanitization
-        if (a.type(case_config)() == 'array') {
-            case_config = {...case_config}
+        if (a.type(case_config)() === 'array') {
+            case_config = { ...case_config }
         }
+
         const parts = a.sane(case_config, `cases.${case_name}`, 'object')()
 
         const body = []
         const case_dependencies = []
         const outline_dependencies = []
+
         let first = true
+
         for (let [part_name, part] of Object.entries(parts)) {
-            if (a.type(part)() == 'string') {
+
+            if (a.type(part)() === 'string') {
                 part = o.operation(part, {
                     outline: Object.keys(outlines),
                     case: Object.keys(cases)
                 }, ['case', 'outline'])
             }
+
             const part_qname = `cases.${case_name}.${part_name}`
             const part_var = `${case_name}__part_${part_name}`
-            a.unexpected(part, part_qname, ['what', 'name', 'extrude', 'shift', 'rotate', 'operation'])
-            const what = a.in(part.what || 'outline', `${part_qname}.what`, ['outline', 'case'])
-            const name = a.sane(part.name, `${part_qname}.name`, 'string')()
+
+            a.unexpected(part, part_qname, [
+                'what', 'name', 'extrude', 'shift', 'rotate', 'operation'
+            ])
+
+            const what = a.in(part.what || 'outline', `${part_qname}.what`, ['outline', 'case', 'pcb'])
             const shift = a.numarr(part.shift || [0, 0, 0], `${part_qname}.shift`, 3)(units)
             const rotate = a.numarr(part.rotate || [0, 0, 0], `${part_qname}.rotate`, 3)(units)
             const operation = a.in(part.operation || 'add', `${part_qname}.operation`, ['add', 'subtract', 'intersect'])
 
-            let base;
-            if (what === 'outline' || what === 'pcb') {
-                const sourceDict = what === 'outline' ? outlines : footprints;
-                const results = resolveFromDict(sourceDict, name);
-                let outline;
-                for (let result of results) {
-                    const key = result.key;
-                    if (what === 'pcb') {
-                        const shape_maker = await footprint_shape.parse(result.config, "F.CrtYd");
-                        const point = new Point(result.point);
+            let base_expr
 
+            if (what === 'outline' || what === 'pcb') {
+                const extrude = a.sane(part.extrude || 1, `${part_qname}.extrude`, 'number')(units)
+                const name_pattern = a.sane(part.name, `${part_qname}.name`, 'string')()
+                const sourceDict = what === 'outline' ? outlines : footprints;
+                const resolved = resolveFromDict(sourceDict, name_pattern)
+                a.assert(resolved.length > 0,
+                    `Field "${part_qname}.name" did not match any outline!`
+                )
+
+                const outline_vars = []
+
+                for (let idx = 0; idx < resolved.length; idx++) {
+                    const { key, value } = resolved[idx];
+                    const safeKey = key.replace(/\./g, '_').replace(/-/g, '_') ;
+
+                    let outline;
+                    if (what === 'pcb') {
+                        if (value.config.side !== "front") {
+                            continue;
+                        }
+                        const shape_maker = await footprint_shape.parse(value.config, "F.CrtYd");
+                        const point = new Point(value.point);
                         let [shape, bbox] = shape_maker();
-                        outline = point.position(shape);
+                        if (Object.entries(shape.models).length == 0 && Object.entries(shape.paths).length == 0) {
+                            continue;
+                        }
+                        outline = rectFromExtents(bbox);
+                        outline= point.position(outline);
                     } else {
-                        outline = result.value.yaml.models.export;
+                        outline = value.yaml.models.export;
                     }
 
-                    const extrude = a.sane(part.extrude || 1, `${part_qname}.${key}.extrude`, 'number')(units)
-                    a.assert(outline, `Field "${part_qname}.name" does not name a valid outline!`)
-                    // This is a hack to separate multiple calls to the same outline with different extrude values
-                    // I know it needlessly duplicates a lot of code, but it's the quickest fix in the short term
-                    // And on the long run, we'll probably be moving to CADQuery anyway...
-                    const extruded_name = `${part_qname}.${key}_extrude_` + ('' + extrude).replace(/\D/g, '_')
+                    const extruded_name =
+                        `${safeKey}_extrude_` + ('' + extrude).replace(/\D/g, '_')
+
                     if (!scripts[extruded_name]) {
                         scripts[extruded_name] = m.exporter.toJscadScript(outline, {
                             functionName: `${extruded_name}_outline_fn`,
-                            extrude: extrude,
+                            extrude,
                             indent: 4
                         })
                     }
+
                     outline_dependencies.push(extruded_name)
-                    base = `${extruded_name}_outline_fn()`
+
+                    const ov = `${part_var}__outline_${safeKey}`
+                    outline_vars.push(ov)
+
+                    body.push(`
+                        let ${ov} = ${extruded_name}_outline_fn();
+                    `)
                 }
-            }  else {
-                a.assert(part.extrude === undefined, `Field "${part_qname}.extrude" should not be used when what=case!`)
-                a.in(name, `${part_qname}.name`, Object.keys(cases))
-                case_dependencies.push(name)
-                base = `${name}_case_fn()`
+
+                body.push(`
+                    let ${part_var} = ${outline_vars[0]};
+                `)
+
+                for (let i = 1; i < outline_vars.length; i++) {
+                    body.push(`
+                        ${part_var} = ${part_var}.union(${outline_vars[i]});
+                    `)
+                }
+
+                base_expr = part_var
+
+            } else {
+                a.in(part.name, `${part_qname}.name`, Object.keys(cases))
+                case_dependencies.push(part.name)
+                base_expr = `${part.name}_case_fn()`
+
+                body.push(`
+                    let ${part_var} = ${base_expr};
+                `)
             }
 
             let op = 'union'
-            if (operation == 'subtract') op = 'subtract'
-            else if (operation == 'intersect') op = 'intersect'
+            if (operation === 'subtract') op = 'subtract'
+            else if (operation === 'intersect') op = 'intersect'
 
             let op_statement = `let result = ${part_var};`
             if (!first) {
@@ -157,32 +211,35 @@ exports.parse = async (config, outlines, previews, units) => {
             first = false
 
             body.push(`
-
-                // creating part ${part_name} of case ${case_name}
-                let ${part_var} = ${base};
-
-                // make sure that rotations are relative
                 let ${part_var}_bounds = ${part_var}.getBounds();
-                let ${part_var}_x = ${part_var}_bounds[0].x + (${part_var}_bounds[1].x - ${part_var}_bounds[0].x) / 2
-                let ${part_var}_y = ${part_var}_bounds[0].y + (${part_var}_bounds[1].y - ${part_var}_bounds[0].y) / 2
-                ${part_var} = translate([-${part_var}_x, -${part_var}_y, 0], ${part_var});
+                let ${part_var}_x =
+                    ${part_var}_bounds[0].x +
+                    (${part_var}_bounds[1].x - ${part_var}_bounds[0].x) / 2;
+                let ${part_var}_y =
+                    ${part_var}_bounds[0].y +
+                    (${part_var}_bounds[1].y - ${part_var}_bounds[0].y) / 2;
+
+                ${part_var} = translate(
+                    [-${part_var}_x, -${part_var}_y, 0],
+                    ${part_var}
+                );
                 ${part_var} = rotate(${JSON.stringify(rotate)}, ${part_var});
-                ${part_var} = translate([${part_var}_x, ${part_var}_y, 0], ${part_var});
+                ${part_var} = translate(
+                    [${part_var}_x, ${part_var}_y, 0],
+                    ${part_var}
+                );
 
                 ${part_var} = translate(${JSON.stringify(shift)}, ${part_var});
                 ${op_statement}
-                
             `)
         }
 
         cases[case_name] = {
             body: `
-
                 function ${case_name}_case_fn() {
                     ${body.join('')}
                     return result;
                 }
-            
             `,
             case_dependencies,
             outline_dependencies
