@@ -76,7 +76,7 @@ const circle = (config, name, points, outlines, units) => {
 
     // prepare params
     a.unexpected(config, `${name}`, ['radius'])
-    const radius = a.sane(config.radius, `${name}.radius`, 'number')(units)
+    const radius = a.sane(config.radius || 0, `${name}.radius`, 'number')(units)
     const circ_units = prep.extend({
         r: radius
     }, units)
