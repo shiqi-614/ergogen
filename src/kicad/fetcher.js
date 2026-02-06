@@ -2,7 +2,7 @@ const { fetchFromGithub } = require('./github_fetcher');
 const { parseContent } = require('./mod_parser');
 const u = require('../utils')
 const { Cache } = require('./cache');
-const cache = new Cache();
+const modCache = new Cache();
 
 
 async function fetchKicadMod(what) {
@@ -10,12 +10,12 @@ async function fetchKicadMod(what) {
     const normalizedWhat = normalizeWhat(what);
     if (normalizedWhat.github) {
         const key = u.getGithubKey(normalizedWhat.github);
-        if (cache.has(key)) {
-            return cache.get(key);
+        if (modCache.has(key)) {
+            return modCache.get(key);
         }
         const response = await fetchFromGithub(normalizedWhat.github);
         const data = parseContent(response.data);
-        cache.set(key, data);
+        modCache.set(key, data);
         return data;
     }
 }

@@ -2,7 +2,7 @@ const { parseContent } = require('./mod_parser');
 const { fetchWhat } = require('./fetcher');
 const u = require('../utils')
 const { Cache } = require('./cache');
-const cache = new Cache();
+const pcbCache = new Cache();
 
 function convert2Array(item) {
     if (!item) return [];
@@ -53,11 +53,12 @@ function extractFootprints(footprintRaw) {
 }
 
 async function parsePcbContent(moduleConfig) {
-    const key = JSON.stringify(moduleConfig.what);
+    const what = u.normalizeWhat(moduleConfig.what);
+    const key = u.getGithubKey(what.github);
     console.log("try to get " + key);
-    if (cache.has(key)) {
+    if (pcbCache.has(key)) {
         console.log("get from cache " + key);
-        return cache.get(key);
+        return pcbCache.get(key);
     }
 
     const response = await fetchWhat(moduleConfig.what)
@@ -75,7 +76,7 @@ async function parsePcbContent(moduleConfig) {
             vias: vias
         }
     };
-    cache.set(key, data);
+    pcbCache.set(key, data);
     return data;
 }
 

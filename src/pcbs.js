@@ -67,14 +67,18 @@ async function getFootprintsFromModule(moduleConfig, data) {
     let footprints = {}
     for (const [name, content] of Object.entries(data)) {
         const subFootprints = u.convertArrayFieldToObject(content, 'footprints')
-        for (const [name, footprintConfig] of Object.entries(subFootprints)) {
-            footprintConfig.where = u.mergeWhereFromParent(moduleConfig?.where, footprintConfig?.where);
+        for (const [fpName, footprintConfig] of Object.entries(subFootprints)) {
+            const newFootprintConfig = {
+              ...footprintConfig,
+              where: u.mergeWhereFromParent(
+                moduleConfig?.where,
+                footprintConfig?.where
+              )
+            };
             // footprintConfig.adjust = u.merge(moduleConfig?.adjust, footprintConfig?.adjust);
-            footprintConfig.what = normalizeWhat(footprintConfig.what);
-            footprints[name] = footprintConfig;
+            newFootprintConfig.what = normalizeWhat(footprintConfig.what);
+            footprints[fpName] = newFootprintConfig;
         }
-        footprints = {...footprints, ...subFootprints};
-
     }
 
     if (moduleConfig.footprints) {

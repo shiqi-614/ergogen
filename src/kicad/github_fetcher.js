@@ -1,6 +1,6 @@
 const axios = require('axios');
 const { Cache } = require('./cache');
-const cache = new Cache();
+const gitCache = new Cache();
 
 function getKey(github) {
     return [github.repo, github.file].join("/");
@@ -11,8 +11,8 @@ const GITHUB_RAW_BASE_URL = 'https://raw.githubusercontent.com';
 async function fetchFromGithub(github) {
     const key = getKey(github);
 
-    if (cache.has(key)) {
-        return cache.get(key);
+    if (gitCache.has(key)) {
+        return gitCache.get(key);
     }
 
     try {
@@ -20,7 +20,7 @@ async function fetchFromGithub(github) {
         const response = await axios.get(url);
 
         // 存储缓存数据和时间戳
-        cache.set(key, response);
+        gitCache.set(key, response);
 
         console.log('Fetched and cached data:', key);
 

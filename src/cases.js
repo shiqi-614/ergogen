@@ -5,14 +5,18 @@ const o = require('./operation')
 const Point = require('./point')
 const footprint_shape = require('./kicad/footprint_shape')
 
-function rectFromExtents(ext) {
-  const w = ext.high[0] - ext.low[0]
-  const h = ext.high[1] - ext.low[1]
+
+function rectFromExtents(ext, expand = 0) {
+  const w = (ext.high[0] - ext.low[0]) + expand * 2
+  const h = (ext.high[1] - ext.low[1]) + expand * 2
 
   const rect = new m.models.Rectangle(w, h)
 
-  // Rectangle 默认左下角在 (0,0)
-  m.model.move(rect, ext.low)
+  // 左下角往 (-expand, -expand) 移
+  m.model.move(rect, [
+    ext.low[0] - expand,
+    ext.low[1] - expand
+  ])
 
   return rect
 }
@@ -115,7 +119,7 @@ exports.parse = async (config, outlines, previews, units) => {
             const part_var = `${case_name}__part_${part_name}`
 
             a.unexpected(part, part_qname, [
-                'what', 'name', 'extrude', 'shift', 'rotate', 'operation'
+                'what', 'name', 'extrude', 'shift', 'rotate', 'operation', 'expand'
             ])
 
             const what = a.in(part.what || 'outline', `${part_qname}.what`, ['outline', 'case', 'pcb'])
@@ -127,6 +131,7 @@ exports.parse = async (config, outlines, previews, units) => {
 
             if (what === 'outline' || what === 'pcb') {
                 const extrude = a.sane(part.extrude || 1, `${part_qname}.extrude`, 'number')(units)
+                const expand = a.sane(part.expand || 0, `${name}.expand`, 'number')(units)
                 const name_pattern = a.sane(part.name, `${part_qname}.name`, 'string')()
                 const sourceDict = what === 'outline' ? outlines : footprints;
                 const resolved = resolveFromDict(sourceDict, name_pattern)
@@ -151,8 +156,9 @@ exports.parse = async (config, outlines, previews, units) => {
                         if (Object.entries(shape.models).length == 0 && Object.entries(shape.paths).length == 0) {
                             continue;
                         }
-                        outline = rectFromExtents(bbox);
+                        outline = rectFromExtents(bbox, expand);
                         outline= point.position(outline);
+                        
                     } else {
                         outline = value.yaml.models.export;
                     }
