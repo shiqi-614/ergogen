@@ -124,13 +124,14 @@ const process = async (raw, debug=false, logger=()=>{}) => {
         }
     }
 
-    logger('Modeling cases...')
+    console.log('Modeling cases...')
     const cases = await cases_lib.parse(results.config.cases || {}, results.outlines, previews, results.units)
     results.cases = {}
     for (const [case_name, case_script] of Object.entries(cases)) {
         if (!debug && case_name.startsWith('_')) continue
         results.cases[case_name] = {jscad: case_script}
     }
+    console.log('Modeling cases done.')
     return results;
 }
 

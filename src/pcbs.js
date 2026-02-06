@@ -50,8 +50,7 @@ async function getModulesFromPcb(pcb_config) {
     let modules = {};
 
     for (const [name, moduleConfig] of Object.entries(pcb_config.modules)) {
-        const response = await fetchWhat(moduleConfig.what)
-        const data = parsePcbContent(response)
+        const data = await parsePcbContent(moduleConfig)
         const footprintsFromModule = await getFootprintsFromModule(moduleConfig, data);
         modules[name] = {
             what: moduleConfig.what,

@@ -1,5 +1,8 @@
 const { parseContent } = require('./mod_parser');
-
+const { fetchWhat } = require('./fetcher');
+const u = require('../utils')
+const { Cache } = require('./cache');
+const cache = new Cache();
 
 function convert2Array(item) {
     if (!item) return [];
@@ -49,20 +52,31 @@ function extractFootprints(footprintRaw) {
     return result;
 }
 
-function parsePcbContent(pcbContent) {
-    const parsed = parseContent(pcbContent);
+async function parsePcbContent(moduleConfig) {
+    const key = JSON.stringify(moduleConfig.what);
+    console.log("try to get " + key);
+    if (cache.has(key)) {
+        console.log("get from cache " + key);
+        return cache.get(key);
+    }
+
+    const response = await fetchWhat(moduleConfig.what)
+
+    const parsed = parseContent(response);
 
     const footprints = extractFootprints(parsed.footprint);
     const segments = convert2Array(parsed.segment);
     const vias = convert2Array(parsed.via);
 
-    return {
+    const data = {
         module: {
             footprints: footprints,
             segments: segments,
             vias: vias
         }
     };
+    cache.set(key, data);
+    return data;
 }
 
 module.exports = { parsePcbContent };

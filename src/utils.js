@@ -199,6 +199,28 @@ exports.stack = (a, b) => {
     }
 }
 
+
+exports.normalizeWhat = (what) => {
+    if ('string' === typeof what) {
+        return {
+            github: {
+                repo: 'shiqi-614/ErgoCaiLib',
+                file: what
+            }
+        };
+         
+    } else if (what.github) {
+        return {
+            github: { ...what.github }
+        };
+    }
+}
+
+
+exports.getGithubKey = (github) => {
+    return [github.repo, github.file].join("/");
+}
+
 const semver = exports.semver = (str, name='') => {
     let main = str.split('-')[0]
     if (main.startsWith('v')) {

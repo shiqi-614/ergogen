@@ -31,7 +31,7 @@ function flipVertically(res) {
 
 
 exports.parse = async (footprintConfig, filterLayers = null) => {
-    console.log("draw footprint: " + footprintConfig.what);
+    console.log("draw footprint: " + JSON.stringify(footprintConfig.what));
     const jsonObj = await fetchKicadMod(footprintConfig.what);
 
     let [pathItems, modelItems] = kicad_shape_converter.convert(jsonObj.footprint, filterLayers);

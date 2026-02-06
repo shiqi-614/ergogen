@@ -1,7 +1,6 @@
 const axios = require('axios');
-
-const cache = new Map();
-const CACHE_DURATION = 60 * 60 * 1000; // 1小时，单位为毫秒
+const { Cache } = require('./cache');
+const cache = new Cache();
 
 function getKey(github) {
     return [github.repo, github.file].join("/");
@@ -13,17 +12,7 @@ async function fetchFromGithub(github) {
     const key = getKey(github);
 
     if (cache.has(key)) {
-        const { timestamp, data } = cache.get(key);
-        const now = Date.now();
-
-        // 检查缓存是否在一小时内
-        if (now - timestamp < CACHE_DURATION) {
-            console.log(`Get data from cache: ${key}`);
-            return data;
-        } else {
-            console.log(`Cache expired for: ${key}`);
-            cache.delete(key); // 删除过期缓存
-        }
+        return cache.get(key);
     }
 
     try {
@@ -31,10 +20,7 @@ async function fetchFromGithub(github) {
         const response = await axios.get(url);
 
         // 存储缓存数据和时间戳
-        cache.set(key, {
-            timestamp: Date.now(),
-            data: response
-        });
+        cache.set(key, response);
 
         console.log('Fetched and cached data:', key);
 
