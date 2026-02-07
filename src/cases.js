@@ -119,7 +119,7 @@ exports.parse = async (config, outlines, previews, units) => {
             const part_var = `${case_name}__part_${part_name}`
 
             a.unexpected(part, part_qname, [
-                'what', 'name', 'extrude', 'shift', 'rotate', 'operation', 'expand'
+                'what', 'name', 'extrude', 'shift', 'rotate', 'operation', 'expand', 'layers'
             ])
 
             const what = a.in(part.what || 'outline', `${part_qname}.what`, ['outline', 'case', 'pcb'])
@@ -132,6 +132,7 @@ exports.parse = async (config, outlines, previews, units) => {
             if (what === 'outline' || what === 'pcb') {
                 const extrude = a.sane(part.extrude || 1, `${part_qname}.extrude`, 'number')(units)
                 const expand = a.sane(part.expand || 0, `${name}.expand`, 'number')(units)
+                const layers = part.layers || ['F.CrtYd'];
                 const name_pattern = a.sane(part.name, `${part_qname}.name`, 'string')()
                 const sourceDict = what === 'outline' ? outlines : footprints;
                 const resolved = resolveFromDict(sourceDict, name_pattern)
@@ -147,10 +148,10 @@ exports.parse = async (config, outlines, previews, units) => {
 
                     let outline;
                     if (what === 'pcb') {
-                        if (value.config.side !== "front") {
+                        if (value.config.side === "back") {
                             continue;
                         }
-                        const shape_maker = await footprint_shape.parse(value.config, "F.CrtYd");
+                        const shape_maker = await footprint_shape.parse(value.config, layers);
                         const point = new Point(value.point);
                         let [shape, bbox] = shape_maker();
                         if (Object.entries(shape.models).length == 0 && Object.entries(shape.paths).length == 0) {
