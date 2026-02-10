@@ -131,7 +131,7 @@ exports.parse = async (config, outlines, previews, units) => {
 
             if (what === 'outline' || what === 'pcb') {
                 const extrude = a.sane(part.extrude || 1, `${part_qname}.extrude`, 'number')(units)
-                const expand = a.sane(part.expand || 0, `${name}.expand`, 'number')(units)
+                const expand = a.sane(part.expand || 0, `${part_qname}.expand`, 'number')(units)
                 const layers = part.layers || ['F.CrtYd'];
                 const name_pattern = a.sane(part.name, `${part_qname}.name`, 'string')()
                 const sourceDict = what === 'outline' ? outlines : footprints;
@@ -144,7 +144,8 @@ exports.parse = async (config, outlines, previews, units) => {
 
                 for (let idx = 0; idx < resolved.length; idx++) {
                     const { key, value } = resolved[idx];
-                    const safeKey = key.replace(/\./g, '_').replace(/-/g, '_') ;
+                    const combinedKey = `${case_name}_${key}`;
+                    const safeKey = combinedKey.replace(/\./g, '_').replace(/-/g, '_');
 
                     let outline;
                     if (what === 'pcb') {
