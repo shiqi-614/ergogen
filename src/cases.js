@@ -227,17 +227,16 @@ exports.parse = async (config, outlines, previews, units) => {
                     ${part_var}_bounds[0].y +
                     (${part_var}_bounds[1].y - ${part_var}_bounds[0].y) / 2;
 
-                ${part_var} = translate(
-                    [-${part_var}_x, -${part_var}_y, 0],
-                    ${part_var}
-                );
-                ${part_var} = rotate(${JSON.stringify(rotate)}, ${part_var});
-                ${part_var} = translate(
-                    [${part_var}_x, ${part_var}_y, 0],
-                    ${part_var}
+                ${part_var} = ${part_var}. translate(
+                    [-${part_var}_x, -${part_var}_y, 0]
                 );
 
-                ${part_var} = translate(${JSON.stringify(shift)}, ${part_var});
+                ${part_var} = ${part_var}.rotateX(${rotate[0]}).rotateY(${rotate[1]}).rotateZ(${rotate[2]});
+                ${part_var} = ${part_var}.translate(
+                    [${part_var}_x, ${part_var}_y, 0]
+                );
+
+                ${part_var} = ${part_var}.translate(${JSON.stringify(shift)});
                 ${op_statement}
             `)
         }
