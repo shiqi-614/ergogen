@@ -1,5 +1,4 @@
-// src/kicad/cache.js
-export class Cache {
+class Cache {
   constructor() {
     this.ttl = 24 * 60 * 60 * 1000;
     this.store = new Map();
@@ -40,3 +39,5 @@ export class Cache {
     return true
   }
 }
+module.exports = Cache;
+

@@ -1,7 +1,7 @@
 const { parseContent } = require('./mod_parser');
 const { fetchWhat } = require('./fetcher');
 const u = require('../utils')
-const { Cache } = require('./cache');
+const Cache = require('./cache');
 const pcbCache = new Cache();
 
 function convert2Array(item) {

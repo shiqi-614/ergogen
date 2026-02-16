@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { Cache } = require('./cache');
+const Cache = require('./cache');
 const gitCache = new Cache();
 
 function getKey(github) {

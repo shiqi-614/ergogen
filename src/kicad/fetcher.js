@@ -1,7 +1,7 @@
 const { fetchFromGithub } = require('./github_fetcher');
 const { parseContent } = require('./mod_parser');
 const u = require('../utils')
-const { Cache } = require('./cache');
+const Cache = require('./cache');
 const modCache = new Cache();
 
 
