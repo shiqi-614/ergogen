@@ -1,57 +1,55 @@
 {
-    "name": "ergogen",
-    "version": "4.1.0",
-    "description": "Ergonomic keyboard layout generator",
-    "author": "B\u00e1n D\u00e9nes <mr@zealot.hu>",
-    "license": "MIT",
-    "homepage": "https://ergogen.xyz",
-    "repository": "github:ergogen/ergogen",
-    "bugs": "https://github.com/ergogen/ergogen/issues",
-    "main": "./src/ergogen.js",
-    "bin": "./src/cli.js",
-    "scripts": {
-        "build": "rollup -c",
-        "test": "mocha -r test/helpers/register test/index.js",
-        "coverage": "nyc --reporter=html --reporter=text npm test",
-        "start-prod": "NODE_ENV=production node src/server.js",
-        "start-dev": "NODE_ENV=development nodemon --watch src js --exec 'npm run build && cp dist/ergogen.js $ERGOGEN_GUI/public/dependencies/ergogen.js && node src/server.js'"
-    },
-    "dependencies": {
-        "axios": "^1.7.7",
-        "body-parser": "^1.20.3",
-        "chrome-remote-interface": "^0.33.2",
-        "cors": "^2.8.5",
-        "express": "^4.21.0",
-        "fs-extra": "^11.1.0",
-        "js-yaml": "^3.14.1",
-        "jszip": "^3.10.1",
-        "kle-serial": "github:ergogen/kle-serial#ergogen",
-        "makerjs": "^0.18.1",
-        "mathjs": "^11.5.0",
-        "node-fetch": "^3.3.2",
-        "pouchdb": "^9.0.0",
-        "yargs": "^17.6.2"
-    },
-    "devDependencies": {
-        "@rollup/plugin-commonjs": "^24.0.1",
-        "@rollup/plugin-json": "^6.0.0",
-        "chai": "^4.3.7",
-        "chai-as-promised": "^7.1.1",
-        "dir-compare": "^4.0.0",
-        "glob": "^8.1.0",
-        "mocha": "^10.2.0",
-        "nodemon": "^3.1.9",
-        "nyc": "^15.1.0",
-        "rollup": "^3.10.1",
-        "sinon": "^15.0.1"
-    },
-    "nyc": {
-        "all": true,
-        "include": [
-            "src/**/*.js"
-        ],
-        "exclude": [
-            "src/templates/kicad8.js"
-        ]
-    }
+  "name": "ergogen",
+  "version": "4.1.0",
+  "description": "Ergonomic keyboard layout generator",
+  "author": "Bán Dénes <mr@zealot.hu>",
+  "license": "MIT",
+  "homepage": "https://ergogen.xyz",
+  "repository": "github:ergogen/ergogen",
+  "bugs": "https://github.com/ergogen/ergogen/issues",
+  "main": "./src/ergogen.js",
+  "bin": "./src/cli.js",
+  "scripts": {
+    "build": "rollup -c",
+    "test": "mocha -r test/helpers/register test/index.js",
+    "coverage": "nyc --reporter=html --reporter=text npm test",
+    "start-prod": "NODE_ENV=production node src/server.js",
+    "start-dev": "NODE_ENV=development nodemon --watch src js --exec 'npm run build && cp dist/ergogen.js $ERGOGEN_GUI/public/dependencies/ergogen.js && node src/server.js'"
+  },
+  "dependencies": {
+    "axios": "^1.7.7",
+    "body-parser": "^1.20.3",
+    "chrome-remote-interface": "^0.33.2",
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "fs-extra": "^11.1.0",
+    "js-yaml": "^3.14.1",
+    "jszip": "^3.10.1",
+    "kle-serial": "github:ergogen/kle-serial#ergogen",
+    "makerjs": "^0.19.2",
+    "mathjs": "^11.5.0",
+    "node-fetch": "^3.3.2",
+    "yargs": "^17.6.2"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^25.0.0",
+    "@rollup/plugin-json": "^6.0.0",
+    "chai": "^4.3.7",
+    "chai-as-promised": "^7.1.1",
+    "dir-compare": "^4.0.0",
+    "mocha": "^11.3.0",
+    "nodemon": "^3.1.9",
+    "nyc": "^15.1.0",
+    "rollup": "^3.10.1",
+    "sinon": "^15.0.1"
+  },
+  "nyc": {
+    "all": true,
+    "include": [
+      "src/**/*.js"
+    ],
+    "exclude": [
+      "src/templates/kicad8.js"
+    ]
+  }
 }
