@@ -124,16 +124,21 @@ const renderZone = (zoneName, zone, zoneAnchor, globalKey, units, totalCnt) => {
 
             points[key.name] = point;
             point.meta = key;
-            if (!point.meta.skip) {
-                point.meta.index = ++totalCnt;
-            }
 
             runningAnchor.shift([0, key.padding])
 
         });
         firstCol = false;
     });
+    const sortedKeys = Object.keys(points).sort();
 
+    sortedKeys.forEach((key, index) => {
+        const point = points[key];
+        if (!point.meta.skip) {
+            point.meta.index = ++totalCnt;
+        }
+    });
+    
     return points;
 };
 

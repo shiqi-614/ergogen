@@ -125,7 +125,13 @@ exports.parse = async (config, points, units) => {
                     throw new Error(`point.meta.index is undefined for: ${entryName}`);
                 }
 
-                const key = isModule ? entryName : entryName + point.meta.index;
+                const existingEntry = entries.find(item => item.key === entryName);
+                let key;
+                if (existingEntry) {
+                    key = entryName + '_' + point.meta.index;
+                } else {
+                    key = entryName;
+                }
                 const entry = { point, config: footprintConfig };
                 entries.push({ key, entry });
             }
