@@ -291,10 +291,13 @@ exports.convert = (footprint, filterLayers = null) => {
                 
                 // 如果有 layerFilter 参数，进一步过滤
                 if (filterLayers) {
+                    const layers = Array.isArray(filterLayers) ? filterLayers : [filterLayers];
+
                     if (item.layer)  {
-                        // 支持数组或单个字符串
-                        const layers = Array.isArray(filterLayers) ? filterLayers : [filterLayers];
                         return layers.includes(item.layer);
+                    } else if (item.layers) {
+                        const res = layers.some(x => item.layers.includes(x));
+                        return res;
                     } else {
                         return false;
                     }

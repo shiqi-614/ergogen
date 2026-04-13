@@ -113,6 +113,23 @@ const polygon = (config, name, points, outlines, units) => {
     }, units]
 }
 
+const hexagon = (config, name, points, outlines, units) => {
+
+    // prepare params
+    a.unexpected(config, `${name}`, ['radius'])
+    const radius = a.sane(config.radius || 0, `${name}.radius`, 'number')(units)
+    const hex_units = prep.extend({
+        r: radius
+    }, units)
+
+    // return shape function and its units
+    return [() => {
+        let hex = new m.models.Polygon(6, radius)
+        const bbox = {high: [radius, radius], low: [-radius, -radius]}
+        return [hex, bbox]
+    }, hex_units]
+}
+
 const outline = (config, name, points, outlines, units) => {
 
     // prepare params
@@ -133,6 +150,7 @@ const whats = {
     rectangle,
     circle,
     polygon,
+    hexagon,
     outline
 }
 
@@ -184,7 +202,7 @@ exports.parse = (config, points, units) => {
 
             // process keys that are common to all part declarations
             const operation = u[a.in(part.operation || 'add', `${name}.operation`, ['add', 'subtract', 'intersect', 'stack'])]
-            const what = a.in(part.what || 'outline', `${name}.what`, ['rectangle', 'circle', 'polygon', 'outline'])
+            const what = a.in(part.what || 'outline', `${name}.what`, ['rectangle', 'circle', 'polygon', 'outline', 'hexagon'])
             const bound = !!part.bound
             const asym = a.asym(part.asym || 'source', `${name}.asym`)
 
@@ -231,7 +249,7 @@ exports.parse = (config, points, units) => {
             if (scale !== 1) {
                 outlines[outline_name] = m.model.scale(outlines[outline_name], scale)
             }
-    
+
             if (expand) {
                 outlines[outline_name] = m.model.outline(
                     outlines[outline_name], Math.abs(expand), joints, (expand < 0), {farPoint: u.farPoint}
@@ -252,4 +270,4 @@ exports.parse = (config, points, units) => {
     }
 
     return outlines
-}   
+}
