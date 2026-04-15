@@ -257,7 +257,8 @@ function layerCheck(item) {
         layer.endsWith("Dwgs.User") || 
         layer.endsWith("Fab") || 
         layer.endsWith("Cu") ||
-        layer.endsWith("SilkS")
+        layer.endsWith("SilkS") ||
+        layer.endsWith("Edge.Cuts")
     );
 
     // Optionally log for debugging (can be removed or controlled via a flag)
