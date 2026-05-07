@@ -7,6 +7,7 @@ const o = require('./operation')
 const prep = require('./prepare')
 const anchor = require('./anchor').parse
 const filter = require('./filter').parse
+const anchor_lib = require('./anchor')
 
 const footprint_types = require('./footprints')
 const template_types = require('./templates')
@@ -55,6 +56,7 @@ async function getModulesFromPcb(pcb_config) {
         modules[name] = {
             what: moduleConfig.what,
             where: moduleConfig.where,
+            asym: moduleConfig.asym || 'both',
             footprints: footprintsFromModule,
             segments: data.module.segments,
             vias: data.module.vias
@@ -95,118 +97,144 @@ async function getFootprintsFromModule(moduleConfig, data) {
 
 }
 
+const processFootprintEntry = (entryName, footprintConfig, pathPrefix, points, units) => {
+    a.typeCheck(footprintConfig, pathPrefix, 'object');
+
+    const where = filter(footprintConfig.where, `${pathPrefix}.where`, points, units);
+    const originalAdjust = footprintConfig.adjust;
+    const adjust = start => anchor(originalAdjust || {}, `${pathPrefix}.adjust`, points, start)(units);
+
+    const entries = [];
+
+    for (const w of where) {
+        setFootprintInPoints(w, entryName, footprintConfig);
+        const point = adjust(w.clone());
+
+        if (!point.meta?.index) {
+            throw new Error(`point.meta.index is undefined for: ${entryName}`);
+        }
+
+        const existingEntry = entries.find(item => item.key === entryName);
+        let key;
+        if (existingEntry) {
+            key = entryName + '_' + point.meta.index;
+        } else {
+            key = entryName;
+        }
+        const entry = { point, config: footprintConfig };
+        entries.push({ key, entry });
+    }
+
+    return entries;
+};
+
+function processModules(pcb_name, modules, points, units) {
+    const newModules = {};
+    for (const [modName, modData] of Object.entries(modules)) {
+        const path = `pcbs.${pcb_name}.modules.${modName}`;
+
+        const moduleWhere = filter(modData.where, `${path}.where`, points, units);
+
+        // 🚫 限制只允许一个 moduleWhere
+        if (moduleWhere.length !== 1) {
+            throw new Error(`Module '${modName}' must have exactly one 'where' point (got ${moduleWhere.length}).`);
+        }
+
+        const modulePoint = moduleWhere[0].clone();
+
+        if (!newModules[modName]) newModules[modName] = {};
+        newModules[modName]['point'] = modulePoint;
+        newModules[modName]['config'] = { what: modData.what };
+        newModules[modName]['footprints'] = {};
+
+        // 转换 segments
+        const transformedSegments = (modData.segments || []).map(seg => ({
+            ...seg,
+            start: transformPoint(seg.start, modulePoint, seg.layer),
+            end: transformPoint(seg.end, modulePoint, seg.layer)
+        }));
+        newModules[modName]['segments'] = transformedSegments;
+
+        // 转换 vias
+        const transformedVias = (modData.vias || []).map(via => ({
+            ...via,
+            at: transformPoint(via.at, modulePoint)
+        }));
+        newModules[modName]['vias'] = transformedVias;
+
+        for (const [fpName, config] of Object.entries(modData.footprints)) {
+            const fpPath = `${path}.footprints.${fpName}`;
+            try {
+                const entries = processFootprintEntry(fpName, config, fpPath, points, units);
+
+                for (const { key, entry } of entries) {
+                    if (key in newModules[modName]['footprints']) {
+                        throw new Error(`Duplicate module footprint key: ${modName}.${key}`);
+                    }
+                    newModules[modName]['footprints'][key] = entry;
+                }
+            } catch (error) {
+                console.error(`Error placing module footprint ${modName}.${fpName}:`, error);
+            }
+        }
+    }
+    return newModules;
+}
+
+
+function processFootprints(pcb_name, footprints, points, units) {
+    const newFootprints = {};
+
+    for (const [fpName, config] of Object.entries(footprints)) {
+        const path = `pcbs.${pcb_name}.footprints.${fpName}`;
+        try {
+            console.log("current fp " + fpName);
+            const entries = processFootprintEntry(fpName, config, path, points, units);
+            for (const { key, entry } of entries) {
+                if (key in newFootprints) {
+                    throw new Error(`Duplicate footprint key: ${key}`);
+                }
+                newFootprints[key] = entry;
+            }
+        } catch (error) {
+            console.error(`Error placing footprint ${fpName}:`, error);
+        }
+    }
+    return newFootprints;
+
+}
+
+
+function filterByAsym(obj, excludeValue = 'source') {
+    return Object.fromEntries(
+        Object.entries(obj).filter(([_, value]) => value.asym !== excludeValue)
+    );
+}
+
 exports.parse = async (config, points, units) => {
     a.typeCheck(config.pcbs || {}, 'pcbs', 'object')
     const pcbs = {}
 
+    const { mirror_points, normal_points } = u.splitMirrorPoints(points);
     for (const [pcb_name, pcb_config] of Object.entries(config.pcbs)) {
         let pcb = pcbs[pcb_name] = {};
+        if (pcb_config.mirror) {
+            const origin_config = config.pcbs[pcb_config.mirror.from];
 
-        const footprints = u.convertArrayFieldToObject(pcb_config, 'footprints');
-        const modules = await getModulesFromPcb(pcb_config);
+            const footprints = u.convertArrayFieldToObject(origin_config, 'footprints');
+            const modules = await getModulesFromPcb(origin_config);
+            const filteredFootprints = filterByAsym(footprints);
+            const filteredModules = filterByAsym(modules);
 
-        const newModules = {};
-        const newFootprints = {};
+            pcb['modules'] = processModules(pcb_name, filteredModules, mirror_points, units);
+            pcb['footprints'] = processFootprints(pcb_name, filteredFootprints, mirror_points, units);
+        } else {
+            const footprints = u.convertArrayFieldToObject(pcb_config, 'footprints');
+            const modules = await getModulesFromPcb(pcb_config);
 
-        const processFootprintEntry = (entryName, footprintConfig, pathPrefix, isModule = false) => {
-            a.typeCheck(footprintConfig, pathPrefix, 'object');
-
-            const where = filter(footprintConfig.where, `${pathPrefix}.where`, points, units);
-            const originalAdjust = footprintConfig.adjust;
-            const adjust = start => anchor(originalAdjust || {}, `${pathPrefix}.adjust`, points, start)(units);
-
-            const entries = [];
-
-            for (const w of where) {
-                setFootprintInPoints(w, entryName, footprintConfig);
-                const point = adjust(w.clone());
-
-                if (!point.meta?.index) {
-                    throw new Error(`point.meta.index is undefined for: ${entryName}`);
-                }
-
-                const existingEntry = entries.find(item => item.key === entryName);
-                let key;
-                if (existingEntry) {
-                    key = entryName + '_' + point.meta.index;
-                } else {
-                    key = entryName;
-                }
-                const entry = { point, config: footprintConfig };
-                entries.push({ key, entry });
-            }
-
-            return entries;
-        };
-
-        // 处理模块 footprints
-        for (const [modName, modData] of Object.entries(modules)) {
-            const path = `pcbs.${pcb_name}.modules.${modName}`;
-
-            const moduleWhere = filter(modData.where, `${path}.where`, points, units);
-
-            // 🚫 限制只允许一个 moduleWhere
-            if (moduleWhere.length !== 1) {
-                throw new Error(`Module '${modName}' must have exactly one 'where' point (got ${moduleWhere.length}).`);
-            }
-
-            const modulePoint = moduleWhere[0].clone();
-
-            if (!newModules[modName]) newModules[modName] = {};
-            newModules[modName]['point'] = modulePoint;
-            newModules[modName]['config'] = { what: modData.what };
-            newModules[modName]['footprints'] = {};
-
-            // 转换 segments
-            const transformedSegments = (modData.segments || []).map(seg => ({
-                ...seg,
-                start: transformPoint(seg.start, modulePoint, seg.layer),
-                end: transformPoint(seg.end, modulePoint, seg.layer)
-            }));
-            newModules[modName]['segments'] = transformedSegments;
-
-            // 转换 vias
-            const transformedVias = (modData.vias || []).map(via => ({
-                ...via,
-                at: transformPoint(via.at, modulePoint)
-            }));
-            newModules[modName]['vias'] = transformedVias;
-
-            for (const [fpName, config] of Object.entries(modData.footprints)) {
-                const fpPath = `${path}.footprints.${fpName}`;
-                try {
-                    const entries = processFootprintEntry(fpName, config, fpPath, true);
-
-                    for (const { key, entry } of entries) {
-                        if (key in newModules[modName]['footprints']) {
-                            throw new Error(`Duplicate module footprint key: ${modName}.${key}`);
-                        }
-                        newModules[modName]['footprints'][key] = entry;
-                    }
-                } catch (error) {
-                    console.error(`Error placing module footprint ${modName}.${fpName}:`, error);
-                }
-            }
+            pcb['modules'] = processModules(pcb_name, modules, normal_points, units);
+            pcb['footprints'] = processFootprints(pcb_name, footprints, normal_points, units);
         }
-
-        // 处理普通 footprints
-        for (const [fpName, config] of Object.entries(footprints)) {
-            const path = `pcbs.${pcb_name}.footprints.${fpName}`;
-            try {
-                const entries = processFootprintEntry(fpName, config, path, false);
-                for (const { key, entry } of entries) {
-                    if (key in newFootprints) {
-                        throw new Error(`Duplicate footprint key: ${key}`);
-                    }
-                    newFootprints[key] = entry;
-                }
-            } catch (error) {
-                console.error(`Error placing footprint ${fpName}:`, error);
-            }
-        }
-
-        pcb['modules'] = newModules;
-        pcb['footprints'] = newFootprints;
     }
 
     return pcbs;

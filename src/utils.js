@@ -5,9 +5,25 @@ const deepcopy = exports.deepcopy = value => {
     return JSON.parse(JSON.stringify(value))
 }
 
-const array = exports.array = (obj) => {
+const splitMirrorPoints = exports.splitMirrorPoints = (points)  => {
+    const mirror_points = {};
+    const normal_points = {};
 
+    for (const [key, value] of Object.entries(points)) {
+        if (key.startsWith('mirror_')) {
+            const newKey = key.replace(/^mirror_/, '');
+            const newValue = value.clone()
+            newValue.meta.name = newValue.meta.name.replace(/^mirror_/, '');
+            newValue.meta.colrow = newValue.meta.colrow.replace(/^mirror_/, '');
+            mirror_points[newKey] = newValue;
+        } else {
+            normal_points[key] = value;
+        }
+    }
+
+    return { mirror_points, normal_points };
 }
+
 const convertArrayFieldToObject = exports.convertArrayFieldToObject = (data, fieldName)  => {
     if (data[fieldName] && Array.isArray(data[fieldName])) {
         data[fieldName] = { ...data[fieldName] };

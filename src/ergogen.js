@@ -88,7 +88,7 @@ const process = async (raw, debug=false, logger=()=>{}) => {
     const results = await processBasic(raw, debug, logger);
     
     logger('Preview PCBs...')
-    const previews = await pcbs_preview_lib.parse(results.canonical, results.pcbs, results.outlines, results.units)
+    const previews = await pcbs_preview_lib.parse(results.canonical, results.pcbs, results.outlines,  results.points, results.units);
     for (const [pcb_name, preview] of Object.entries(previews)) {
         console.log("preview: " + pcb_name);
         results.pcbs[pcb_name]['preview'] = io.twodee(preview['preview'], debug);

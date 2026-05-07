@@ -13,6 +13,8 @@ const footprint_types = require('./footprints')
 const template_types = require('./templates')
 
 const footprint_shape = require('./kicad/footprint_shape')
+const {_parse_axis} = require("./points");
+const outlines_lib = require("./outlines");
 
 const outline = (config, name, points, outlines, units) => {
     // prepare params
@@ -30,7 +32,7 @@ const outline = (config, name, points, outlines, units) => {
 } 
 
 
-exports.parse = async (config, pcbs, outlines, units) => {
+exports.parse = async (config, pcbs, outlines, points, units) => {
 
     a.typeCheck(config.pcbs || {}, 'pcbs', 'object')
     const previews = {}
@@ -38,16 +40,25 @@ exports.parse = async (config, pcbs, outlines, units) => {
     for (const [pcb_name, pcb_config] of Object.entries(config.pcbs)) {
 
         let preview;
+        if (pcb_config.mirror) {
+            const origin_config = config.pcbs[pcb_config.mirror.from];
+            pcb_config.outlines = origin_config.outlines;
+        }
         if (a.type(pcb_config.outlines)() == 'array') {
             pcb_config.outlines = {...pcb_config.outlines}
         }
         const config_outlines = a.typeCheck(pcb_config.outlines || {}, `pcbs.${pcb_name}.outlines`, 'object')
-        const kicad_outlines = {}
+
         for (const [outline_name, outline] of Object.entries(config_outlines)) {
             const ref = a.in(outline.outline, `pcbs.${pcb_name}.outlines.${outline_name}.outline`, Object.keys(outlines))
-            const layer = a.typeCheck(outline.layer || 'Edge.Cuts', `pcbs.${pcb_name}.outlines.${outline_name}.outline`, 'string')
             const operation = u['stack']
-            preview = operation(preview, outlines[ref].yaml)
+            if (pcb_config.mirror) {
+                const { mirror_points, _} = u.splitMirrorPoints(points);
+                const mirror_outlines = outlines_lib.parse(config.outlines || {}, mirror_points, units)
+                preview = operation(preview, mirror_outlines[ref]);
+            } else {
+                preview = operation(preview, outlines[ref].yaml)
+            }
         }
 
         const allFootprints = {
@@ -56,14 +67,14 @@ exports.parse = async (config, pcbs, outlines, units) => {
                 return [`footprints.${fpKey}`, fpEntry];
               })
             ),
-          ...Object.fromEntries(
-            Object.entries(pcbs[pcb_name].modules).flatMap(([modName, modData]) =>
-              Object.entries(modData.footprints).map(([fpKey, fpEntry]) => {
-                const combinedKey = `modules.${modName}.${fpKey}`;
-                return [combinedKey, fpEntry];
-              })
-            )
-          )
+          ...(pcbs[pcb_name].modules ? Object.fromEntries(
+              Object.entries(pcbs[pcb_name].modules).flatMap(([modName, modData]) =>
+                Object.entries(modData.footprints || {}).map(([fpKey, fpEntry]) => {
+                  const combinedKey = `modules.${modName}.${fpKey}`;
+                  return [combinedKey, fpEntry];
+                })
+              )
+            ) : {})
         };
 
         for (const [name, footprintConfig] of Object.entries(allFootprints)) {
