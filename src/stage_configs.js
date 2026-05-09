@@ -18,4 +18,6 @@ const getStage  = () => {
 };
 
 
+const env = getStage();
+console.log("env is " + env);
 module.exports = stage_configs[getStage()];

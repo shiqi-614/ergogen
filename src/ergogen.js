@@ -69,7 +69,7 @@ const processBasic = async (raw, debug=false, logger=()=>{}) => {
     }
 
     logger('Scaffolding PCBs...')
-    const pcbs = await pcbs_lib.parse(config, points, units)
+    const pcbs = await pcbs_lib.parse(results, points, units)
     results.pcbs = {}
     for (const [pcb_name, pcb_text] of Object.entries(pcbs)) {
         results.pcbs[pcb_name] = pcb_text
@@ -88,7 +88,7 @@ const process = async (raw, debug=false, logger=()=>{}) => {
     const results = await processBasic(raw, debug, logger);
     
     logger('Preview PCBs...')
-    const previews = await pcbs_preview_lib.parse(results.canonical, results.pcbs, results.outlines,  results.points, results.units);
+    const previews = await pcbs_preview_lib.parse(results.config, results.pcbs, results.outlines,  results.points, results.units);
     for (const [pcb_name, preview] of Object.entries(previews)) {
         console.log("preview: " + pcb_name);
         results.pcbs[pcb_name]['preview'] = io.twodee(preview['preview'], debug);
@@ -96,17 +96,31 @@ const process = async (raw, debug=false, logger=()=>{}) => {
     results.demo = io.twodee(points_lib.visualize(results.points, results.units), debug);
 
     if (results.canonical?.is_preview === false) {
-        logger("Creating KiCad Project...")
+        logger("Creating KiCad Project..." + stage_configs.KICADGEN_API_URL)
         try {
             results.kicad = {};
+            const { mirror_points, normal_points } = u.splitMirrorPoints(results.points);
             for (const [pcb_name, pcb_config] of Object.entries(results.canonical.pcbs)) {
-                const response = await axios.post(stage_configs.KICADGEN_API_URL, 
+                let effective_points = normal_points;
+                let effective_config = pcb_config;
+
+                if (pcb_config.mirror) {
+                    effective_config = results.config.pcbs[pcb_config.mirror.from];
+                    effective_points = mirror_points;
+                    effective_config.footprints = u.filterByAsym(effective_config.footprints);
+                    effective_config.modules = u.filterByAsym(effective_config.modules);
+                } else {
+                    effective_config.footprints = u.filterByAsym(effective_config.footprints, 'clone');
+                    effective_config.modules = u.filterByAsym(effective_config.modules, 'clone');
+                }
+
+                const response = await axios.post(stage_configs.KICADGEN_API_URL,
                     {
-                        "points": results.points,
+                        "points": effective_points,
                         "pcb" : {
                             "name": pcb_name,
-                            "config": pcb_config
-                        }
+                            "config": effective_config
+                        },
                     },
                     {
                         headers: {
@@ -125,7 +139,7 @@ const process = async (raw, debug=false, logger=()=>{}) => {
     }
 
     console.log('Modeling cases...')
-    const cases = await cases_lib.parse(results.config.cases || {}, results.outlines, previews, results.units)
+    const cases = await cases_lib.parse(results.config, results.config.cases || {}, results.outlines, previews, results.points, results.units)
     results.cases = {}
     for (const [case_name, case_script] of Object.entries(cases)) {
         if (!debug && case_name.startsWith('_')) continue

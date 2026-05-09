@@ -172,11 +172,12 @@ const expand_shorthand = (config, name, units) => {
     }
 }
 
-exports.parse = (config, points, units) => {
+exports.parse = (config_raw, points, units) => {
 
     // output outlines will be collected here
     const outlines = {}
 
+    let config = u.deepcopy(config_raw)
     // the config must be an actual object so that the exports have names
     config = a.sane(config, 'outlines', 'object')()
     for (let [outline_name, parts] of Object.entries(config)) {

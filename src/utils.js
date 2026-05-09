@@ -12,9 +12,9 @@ const splitMirrorPoints = exports.splitMirrorPoints = (points)  => {
     for (const [key, value] of Object.entries(points)) {
         if (key.startsWith('mirror_')) {
             const newKey = key.replace(/^mirror_/, '');
-            const newValue = value.clone()
-            newValue.meta.name = newValue.meta.name.replace(/^mirror_/, '');
-            newValue.meta.colrow = newValue.meta.colrow.replace(/^mirror_/, '');
+            const newValue = value.clone();
+            newValue.meta.name = value.meta.name.replace(/^mirror_/, '');
+            newValue.meta.colrow = value.meta.colrow.replace(/^mirror_/, '');
             mirror_points[newKey] = newValue;
         } else {
             normal_points[key] = value;
@@ -22,6 +22,12 @@ const splitMirrorPoints = exports.splitMirrorPoints = (points)  => {
     }
 
     return { mirror_points, normal_points };
+}
+
+const filterByAsym = exports.filterByAsym = (obj, excludeValue = 'source') => {
+    return Object.fromEntries(
+        Object.entries(obj).filter(([_, value]) => value.asym !== excludeValue)
+    );
 }
 
 const convertArrayFieldToObject = exports.convertArrayFieldToObject = (data, fieldName)  => {
@@ -86,28 +92,18 @@ function rotateAroundCenter(point, center, angleDeg) {
     return [center[0] + rx, center[1] + ry];
 }
 
-const mergeWhereFromParent = exports.mergeWhereFromParent = (moduleWhere = {}, footprintWhere = {}) => {
-    const modShift = moduleWhere.shift || [0, 0];
-    const modRotate = moduleWhere.rotate || 0;
+const mergeWhereFromParent = exports.mergePointFromParent = (modulePoint,  footprintWhere = {}) => {
+    const fpPoint = modulePoint.clone()
+    fpPoint.meta.mirrored = false
 
     const fpShift = footprintWhere.shift || [0, 0];
-    const fpRotate = footprintWhere.rotate || 0;
+    let fpRotate = footprintWhere.rotate || 0;
+    // const newShift = rotateAroundCenter(fpShift, modulePoint, modulePoint.r * -1)
+    fpPoint.shift(fpShift)
+    fpPoint.rotate(fpRotate, [fpPoint.x, fpPoint.y]);
+    // fpPoint.rotate(modulePoint.r, [modulePoint.x, modulePoint.y]);
 
-    // 计算 footprint 的 shift 在 module 中旋转之后的位置（以 modShift 为中心）
-    const fpShiftRotated = rotateAroundCenter(
-        [modShift[0] + fpShift[0], modShift[1] + fpShift[1]],
-        modShift,
-        modRotate
-    );
-
-    // 总旋转角度是 module + footprint
-    const mergedRotate = modRotate + fpRotate;
-
-    return {
-        ref: moduleWhere.ref,
-        shift: fpShiftRotated,
-        rotate: mergedRotate
-    };
+    return fpPoint;
 }
 
 const deep = exports.deep = (obj, key, val) => {

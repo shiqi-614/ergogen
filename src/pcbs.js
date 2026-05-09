@@ -4,17 +4,12 @@ const yaml = require('js-yaml')
 const u = require('./utils')
 const a = require('./assert')
 const o = require('./operation')
-const prep = require('./prepare')
 const anchor = require('./anchor').parse
 const filter = require('./filter').parse
-const anchor_lib = require('./anchor')
 
-const footprint_types = require('./footprints')
-const template_types = require('./templates')
-
-const { fetchKicadMod, normalizeWhat, fetchWhat } = require('./kicad/fetcher');
-const kicad_shape_converter = require('./kicad/shape_converter')
+const { normalizeWhat } = require('./kicad/fetcher');
 const { parsePcbContent } = require('./kicad/pcb_extractor')
+const outlines_lib = require("./outlines");
 
 
 function setFootprintInPoints(w, fpName, footprintConfig) {
@@ -67,17 +62,18 @@ async function getModulesFromPcb(pcb_config) {
 
 async function getFootprintsFromModule(moduleConfig, data) {
     let footprints = {}
-    for (const [name, content] of Object.entries(data)) {
+    for (const [_, content] of Object.entries(data)) {
         const subFootprints = u.convertArrayFieldToObject(content, 'footprints')
         for (const [fpName, footprintConfig] of Object.entries(subFootprints)) {
             const newFootprintConfig = {
               ...footprintConfig,
-              where: u.mergeWhereFromParent(
-                moduleConfig?.where,
-                footprintConfig?.where
-              )
+              // where: u.mergeWhereFromParent(
+              //   moduleConfig?.where,
+              //   footprintConfig?.where
+              // )
+              where: footprintConfig?.where
             };
-            // footprintConfig.adjust = u.merge(moduleConfig?.adjust, footprintConfig?.adjust);
+            // newFootprintConfig.adjust = u.merge(moduleConfig?.adjust, footprintConfig?.adjust);
             newFootprintConfig.what = normalizeWhat(footprintConfig.what);
             footprints[fpName] = newFootprintConfig;
         }
@@ -140,42 +136,37 @@ function processModules(pcb_name, modules, points, units) {
             throw new Error(`Module '${modName}' must have exactly one 'where' point (got ${moduleWhere.length}).`);
         }
 
-        const modulePoint = moduleWhere[0].clone();
+        for (const w of moduleWhere) {
+            const modulePoint = w;
 
-        if (!newModules[modName]) newModules[modName] = {};
-        newModules[modName]['point'] = modulePoint;
-        newModules[modName]['config'] = { what: modData.what };
-        newModules[modName]['footprints'] = {};
+            if (!newModules[modName]) newModules[modName] = {};
+            newModules[modName]['point'] = modulePoint;
+            newModules[modName]['config'] = { what: modData.what };
+            newModules[modName]['footprints'] = {};
 
-        // 转换 segments
-        const transformedSegments = (modData.segments || []).map(seg => ({
-            ...seg,
-            start: transformPoint(seg.start, modulePoint, seg.layer),
-            end: transformPoint(seg.end, modulePoint, seg.layer)
-        }));
-        newModules[modName]['segments'] = transformedSegments;
+            // 转换 segments
+            newModules[modName]['segments'] = (modData.segments || []).map(seg => ({
+                ...seg,
+                start: transformPoint(seg.start, modulePoint, seg.layer),
+                end: transformPoint(seg.end, modulePoint, seg.layer)
+            }));
 
-        // 转换 vias
-        const transformedVias = (modData.vias || []).map(via => ({
-            ...via,
-            at: transformPoint(via.at, modulePoint)
-        }));
-        newModules[modName]['vias'] = transformedVias;
+            // 转换 vias
+            newModules[modName]['vias'] = (modData.vias || []).map(via => ({
+                ...via,
+                at: transformPoint(via.at, modulePoint)
+            }));
 
-        for (const [fpName, config] of Object.entries(modData.footprints)) {
-            const fpPath = `${path}.footprints.${fpName}`;
-            try {
-                const entries = processFootprintEntry(fpName, config, fpPath, points, units);
-
-                for (const { key, entry } of entries) {
-                    if (key in newModules[modName]['footprints']) {
-                        throw new Error(`Duplicate module footprint key: ${modName}.${key}`);
-                    }
-                    newModules[modName]['footprints'][key] = entry;
+            for (const [fpName, config] of Object.entries(modData.footprints)) {
+                const fpPath = `${path}.footprints.${fpName}`;
+                try {
+                    const fpPoint = u.mergePointFromParent(modulePoint, config.where);
+                    newModules[modName]['footprints'][fpName] = { point: fpPoint , config: config };
+                } catch (error) {
+                    console.error(`Error placing module footprint ${modName}.${fpName}:`, error);
                 }
-            } catch (error) {
-                console.error(`Error placing module footprint ${modName}.${fpName}:`, error);
             }
+
         }
     }
     return newModules;
@@ -192,7 +183,8 @@ function processFootprints(pcb_name, footprints, points, units) {
             const entries = processFootprintEntry(fpName, config, path, points, units);
             for (const { key, entry } of entries) {
                 if (key in newFootprints) {
-                    throw new Error(`Duplicate footprint key: ${key}`);
+                    console.log(`Found footprint key: ${key}`);
+                    continue;
                 }
                 newFootprints[key] = entry;
             }
@@ -205,13 +197,42 @@ function processFootprints(pcb_name, footprints, points, units) {
 }
 
 
-function filterByAsym(obj, excludeValue = 'source') {
-    return Object.fromEntries(
-        Object.entries(obj).filter(([_, value]) => value.asym !== excludeValue)
-    );
+function getAllPaths(model) {
+    const paths = [];
+    m.model.walk(model, {
+        onPath: function (walkPath) {
+            paths.push(walkPath.pathContext);
+        }
+    });
+    return paths;
 }
 
-exports.parse = async (config, points, units) => {
+function get_outlines_preview(results, pcb_config, pcb_name, points, units) {
+    const config = results.config;
+    if (a.type(pcb_config.outlines)() === 'array') {
+        pcb_config.outlines = {...pcb_config.outlines}
+    }
+    const config_outlines = a.typeCheck(pcb_config.outlines || {}, `pcbs.${pcb_name}.outlines`, 'object')
+    let outline_preview;
+    for (const [outline_name, outline] of Object.entries(config_outlines)) {
+        const ref = a.in(outline.outline, `pcbs.${pcb_name}.outlines.${outline_name}.outline`, Object.keys(results.outlines))
+        const operation = u['stack']
+        if (pcb_config.mirror) {
+            const {mirror_points, _} = u.splitMirrorPoints(points);
+            const mirror_outlines = outlines_lib.parse(config.outlines || {}, mirror_points, units)
+            outline_preview = operation(outline_preview, mirror_outlines[ref]);
+        } else {
+            outline_preview = operation(outline_preview, results.outlines[ref].raw)
+        }
+    }
+    return {
+        raw: outline_preview,
+        paths: getAllPaths(outline_preview),
+    }
+}
+
+exports.parse = async (results, points, units) => {
+    let config = results.config;
     a.typeCheck(config.pcbs || {}, 'pcbs', 'object')
     const pcbs = {}
 
@@ -220,21 +241,30 @@ exports.parse = async (config, points, units) => {
         let pcb = pcbs[pcb_name] = {};
         if (pcb_config.mirror) {
             const origin_config = config.pcbs[pcb_config.mirror.from];
-
+            pcb_config['outlines'] = pcb_config['outlines'] || origin_config['outlines'] || {};
             const footprints = u.convertArrayFieldToObject(origin_config, 'footprints');
             const modules = await getModulesFromPcb(origin_config);
-            const filteredFootprints = filterByAsym(footprints);
-            const filteredModules = filterByAsym(modules);
+            const filteredFootprints = u.filterByAsym(footprints);
+            const filteredModules = u.filterByAsym(modules);
 
             pcb['modules'] = processModules(pcb_name, filteredModules, mirror_points, units);
             pcb['footprints'] = processFootprints(pcb_name, filteredFootprints, mirror_points, units);
+            for (const [key, value] of Object.entries(mirror_points)) {
+                points[`mirror_${key}`].meta.footprints = value.meta.footprints;
+                points[`mirror_${key}`].meta.column_name= value.meta.column_name;
+                points[`mirror_${key}`].meta.row_name = value.meta.row_name;
+            }
+
         } else {
             const footprints = u.convertArrayFieldToObject(pcb_config, 'footprints');
             const modules = await getModulesFromPcb(pcb_config);
+            const filteredFootprints = u.filterByAsym(footprints, 'clone');
+            const filteredModules = u.filterByAsym(modules, 'clone');
 
-            pcb['modules'] = processModules(pcb_name, modules, normal_points, units);
-            pcb['footprints'] = processFootprints(pcb_name, footprints, normal_points, units);
+            pcb['modules'] = processModules(pcb_name, filteredModules, normal_points, units);
+            pcb['footprints'] = processFootprints(pcb_name, filteredFootprints, normal_points, units);
         }
+        pcb['outlines'] = get_outlines_preview(results, pcb_config, pcb_name, points, units);
     }
 
     return pcbs;

@@ -8,7 +8,7 @@ class Cache {
 
     if (this.isBrowser && this.usePersistent) {
       // 浏览器环境使用 localStorage
-      this.storageKey = 'app_cache_store';
+      this.storageKey = 'ergocai_cache_store';
       this._loadFromStorage();
     } else {
       // Node.js 或非持久化模式使用 Map

@@ -1,24 +1,26 @@
-
 const m = require('makerjs')
 const a = require('./assert')
 const o = require('./operation')
 const Point = require('./point')
 const footprint_shape = require('./kicad/footprint_shape')
+const u = require("./utils");
+const outlines_lib = require("./outlines");
+const io = require("./io");
 
 
 function rectFromExtents(ext, expand = 0) {
-  const w = (ext.high[0] - ext.low[0]) + expand * 2
-  const h = (ext.high[1] - ext.low[1]) + expand * 2
+    const w = (ext.high[0] - ext.low[0]) + expand * 2
+    const h = (ext.high[1] - ext.low[1]) + expand * 2
 
-  const rect = new m.models.Rectangle(w, h)
+    const rect = new m.models.Rectangle(w, h)
 
-  // 左下角往 (-expand, -expand) 移
-  m.model.move(rect, [
-    ext.low[0] - expand,
-    ext.low[1] - expand
-  ])
+    // 左下角往 (-expand, -expand) 移
+    m.model.move(rect, [
+        ext.low[0] - expand,
+        ext.low[1] - expand
+    ])
 
-  return rect
+    return rect
 }
 
 function resolveFromDict(dict, pattern) {
@@ -49,9 +51,10 @@ function resolveFromDict(dict, pattern) {
         .map(([key, value]) => ({ key, value }));
 }
 
-exports.parse = async (config, outlines, previews, units) => {
+exports.parse = async (config, cases_config, outlines, previews, points, units) => {
 
-    const cases_config = a.sane(config, 'cases', 'object')()
+
+    a.sane(cases_config, 'cases', 'object')()
 
     const scripts = {}
     const cases = {}
@@ -92,7 +95,21 @@ exports.parse = async (config, outlines, previews, units) => {
         return result.join('')
     }
 
+    const mirror_outlines = {}
+    const { mirror_points, _} = u.splitMirrorPoints(points);
+    const mirror_outlines_raw = outlines_lib.parse(config.outlines || {}, mirror_points, units)
+
+    for (const [name, outline] of Object.entries(mirror_outlines_raw)) {
+        mirror_outlines[name] = io.twodee(outline)
+    }
+
     for (let [case_name, case_config] of Object.entries(cases_config)) {
+        let mirrored = false;
+        if (case_config.mirror) {
+            const origin_config = cases_config[case_config.mirror.from];
+            mirrored = true;
+            case_config = origin_config;
+        }
 
         if (a.type(case_config)() === 'array') {
             case_config = { ...case_config }
@@ -119,13 +136,14 @@ exports.parse = async (config, outlines, previews, units) => {
             const part_var = `${case_name}__part_${part_name}`
 
             a.unexpected(part, part_qname, [
-                'what', 'name', 'extrude', 'shift', 'rotate', 'operation', 'expand', 'layers'
+                'what', 'name', 'extrude', 'shift', 'rotate', 'operation', 'expand', 'layers', 'asym'
             ])
 
             const what = a.in(part.what || 'outline', `${part_qname}.what`, ['outline', 'case', 'pcb'])
             const shift = a.numarr(part.shift || [0, 0, 0], `${part_qname}.shift`, 3)(units)
             const rotate = a.numarr(part.rotate || [0, 0, 0], `${part_qname}.rotate`, 3)(units)
             const operation = a.in(part.operation || 'add', `${part_qname}.operation`, ['add', 'subtract', 'intersect'])
+            const asym = part.asym || 'both'; // 默认值为 'both'
 
             let base_expr
 
@@ -134,7 +152,26 @@ exports.parse = async (config, outlines, previews, units) => {
                 const expand = a.sane(part.expand || 0, `${part_qname}.expand`, 'number')(units)
                 const layers = part.layers || ['F.CrtYd'];
                 const name_pattern = a.sane(part.name, `${part_qname}.name`, 'string')()
-                const sourceDict = what === 'outline' ? outlines : footprints;
+                // const sourceDict = what === 'outline' ? outlines : footprints;
+                let sourceDict;
+                if (what === 'outline') {
+                    if (mirrored) {
+                        if (asym === 'source') {
+                            continue;
+                        } else {
+                            sourceDict = mirror_outlines;
+                        }
+                    } else {
+                        if (asym === 'clone') {
+                            continue;
+                        } else {
+                            sourceDict = outlines;
+                        }
+                    }
+                } else {
+                    sourceDict = footprints;
+                }
+
                 const resolved = resolveFromDict(sourceDict, name_pattern)
                 a.assert(resolved.length > 0,
                     `Field "${part_qname}.name" did not match any outline!`
@@ -160,9 +197,10 @@ exports.parse = async (config, outlines, previews, units) => {
                         }
                         outline = rectFromExtents(bbox, expand);
                         outline= point.position(outline);
-                        
+
                     } else {
-                        outline = value.yaml.models.export;
+                        // 根据是否有 yaml 属性来获取 outline
+                        outline = value.raw? value.raw.models.export : value;
                     }
 
                     const extruded_name =
@@ -184,6 +222,10 @@ exports.parse = async (config, outlines, previews, units) => {
                     body.push(`
                         let ${ov} = ${extruded_name}_outline_fn();
                     `)
+                }
+
+                if (outline_vars.length === 0) {
+                    continue; // 跳过没有有效 outline 的部分
                 }
 
                 body.push(`
@@ -255,5 +297,5 @@ exports.parse = async (config, outlines, previews, units) => {
         results[case_name] = resolve(case_name)
     }
 
-    return results
+    return results;
 }
