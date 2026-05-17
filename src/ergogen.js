@@ -25,11 +25,11 @@ const processBasic = async (raw, debug=false, logger=()=>{}) => {
     config = prepare.inherit(config)
     config = prepare.parameterize(config)
     const results = {}
-    if (debug) {
-        results.raw = raw;
-    }
+    results.raw = config.raw;
+    delete config.raw;
 
     results.canonical = u.deepcopy(config)
+    results.config = config;
 
     if (config.meta && config.meta.engine) {
         logger('Checking compatibility...')
@@ -38,7 +38,6 @@ const processBasic = async (raw, debug=false, logger=()=>{}) => {
             throw new Error(`Current ergogen version (${version}) doesn\'t satisfy config's engine requirement (${config.meta.engine})!`)
         }
     }
-    results.config = config;
 
     logger('Calculating variables...')
     const units = units_lib.parse(config)
@@ -102,16 +101,10 @@ const process = async (raw, debug=false, logger=()=>{}) => {
             const { mirror_points, normal_points } = u.splitMirrorPoints(results.points);
             for (const [pcb_name, pcb_config] of Object.entries(results.canonical.pcbs)) {
                 let effective_points = normal_points;
-                let effective_config = pcb_config;
 
                 if (pcb_config.mirror) {
                     effective_config = results.config.pcbs[pcb_config.mirror.from];
                     effective_points = mirror_points;
-                    effective_config.footprints = u.filterByAsym(effective_config.footprints);
-                    effective_config.modules = u.filterByAsym(effective_config.modules);
-                } else {
-                    effective_config.footprints = u.filterByAsym(effective_config.footprints, 'clone');
-                    effective_config.modules = u.filterByAsym(effective_config.modules, 'clone');
                 }
 
                 const response = await axios.post(stage_configs.KICADGEN_API_URL,
@@ -119,8 +112,8 @@ const process = async (raw, debug=false, logger=()=>{}) => {
                         "points": effective_points,
                         "pcb" : {
                             "name": pcb_name,
-                            "config": effective_config
                         },
+                        "results": results
                     },
                     {
                         headers: {
