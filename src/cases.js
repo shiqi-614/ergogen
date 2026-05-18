@@ -9,18 +9,48 @@ const io = require("./io");
 
 
 function rectFromExtents(ext, expand = 0) {
-    const w = (ext.high[0] - ext.low[0]) + expand * 2
-    const h = (ext.high[1] - ext.low[1]) + expand * 2
+    if (ext.paths !== undefined) {
+        let maxRadius = -Infinity;
+        let maxCirclePath = null;
+        let maxCircleId = null;
 
-    const rect = new m.models.Rectangle(w, h)
+        for (const pathId in ext.paths) {
+            const path = ext.paths[pathId];
 
-    // 左下角往 (-expand, -expand) 移
-    m.model.move(rect, [
-        ext.low[0] - expand,
-        ext.low[1] - expand
-    ])
+            if (path.type === 'circle') {
+                const radius = path.radius;
+                if (radius > maxRadius) {
+                    maxRadius = radius;
+                    maxCirclePath = path;
+                    maxCircleId = pathId;
+                }
+            }
+        }
 
-    return rect
+        if (maxCirclePath !== null) {
+            const expandedRadius = maxCirclePath.radius + expand;
+            return {
+                paths: {
+                    [maxCircleId]: new m.paths.Circle([...maxCirclePath.origin], expandedRadius)
+                }
+            }
+        }
+    }
+    if (ext.high !== undefined) {
+        const w = (ext.high[0] - ext.low[0]) + expand * 2
+        const h = (ext.high[1] - ext.low[1]) + expand * 2
+
+        const rect = new m.models.Rectangle(w, h)
+
+        // 左下角往 (-expand, -expand) 移
+        m.model.move(rect, [
+            ext.low[0] - expand,
+            ext.low[1] - expand
+        ])
+
+        return rect
+
+    }
 }
 
 function resolveFromDict(dict, pattern) {

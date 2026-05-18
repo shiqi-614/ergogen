@@ -47,6 +47,9 @@ exports.parse = async (footprintConfig, filterLayers = null) => {
         } else {
             res.layer = "aqua";
         }
+        if (jsonObj.footprint.name.startsWith("MountingHole")) {
+            return [res, res];
+        }
         const bbox = m.measure.modelExtents(res);
         return [res, bbox];
     };
