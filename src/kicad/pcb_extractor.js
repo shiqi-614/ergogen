@@ -2,7 +2,7 @@ const { parseContent } = require('./mod_parser');
 const { fetchWhat } = require('./fetcher');
 const u = require('../utils')
 const Cache = require('./cache');
-const pcbCache = new Cache();
+const pcbCache = new Cache('kicad_pcb');
 
 function convert2Array(item) {
     if (!item) return [];

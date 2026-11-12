@@ -1,6 +1,6 @@
 const axios = require('axios');
 const Cache = require('./cache');
-const gitCache = new Cache();
+const gitCache = new Cache('github');
 
 function getKey(github) {
     return [github.repo, github.file].join("/");

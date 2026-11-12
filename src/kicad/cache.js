@@ -1,5 +1,9 @@
+// 以前所有缓存共用这一个 localStorage key，而且 key 格式相同（repo/file），刷新页面后会互相读到对方的值
+const LEGACY_STORAGE_KEY = 'ergocai_cache_store';
+
 class Cache {
-  constructor(ttl = 24 * 60 * 60 * 1000, usePersistent = true) {
+  // name: 每个缓存一个，用作自己的 localStorage key
+  constructor(name, ttl = 24 * 60 * 60 * 1000, usePersistent = true) {
     this.ttl = ttl;
     this.usePersistent = usePersistent;
 
@@ -8,7 +12,8 @@ class Cache {
 
     if (this.isBrowser && this.usePersistent) {
       // 浏览器环境使用 localStorage
-      this.storageKey = 'ergocai_cache_store';
+      this.storageKey = `ergocai_cache_${name}`;
+      localStorage.removeItem(LEGACY_STORAGE_KEY);
       this._loadFromStorage();
     } else {
       // Node.js 或非持久化模式使用 Map
