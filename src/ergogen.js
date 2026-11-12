@@ -87,10 +87,10 @@ const process = async (raw, debug=false, logger=()=>{}) => {
     const results = await processBasic(raw, debug, logger);
     
     logger('Preview PCBs...')
-    const previews = await pcbs_preview_lib.parse(results.config, results.pcbs, results.outlines,  results.points, results.units);
+    const previews = await pcbs_preview_lib.parse(results.config, results.pcbs);
     for (const [pcb_name, preview] of Object.entries(previews)) {
         console.log("preview: " + pcb_name);
-        results.pcbs[pcb_name]['preview'] = io.twodee(preview['preview'], debug);
+        results.pcbs[pcb_name]['preview'] = { kicad_pcb: preview['kicad_pcb'] };
     }
     results.demo = io.twodee(points_lib.visualize(results.points, results.units), debug);
 

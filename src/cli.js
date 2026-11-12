@@ -191,11 +191,9 @@ if (results.pcbs) {
     }
 }
 
-if (results.pcbs_preview) {
-    for (const [name, pcb_preview] of Object.entries(results.pcbs_preview)) {
-        console.log("preview name: " + name);
-        // console.log("preview data: " + JSON.stringify(pcb_preview));
-        composite(pcb_preview, `preview/${name}`)
+if (results.pcbs) {
+    for (const [name, pcb] of Object.entries(results.pcbs)) {
+        single(pcb.preview && pcb.preview.kicad_pcb, `preview/${name}.kicad_pcb`)
     }
 }
 
