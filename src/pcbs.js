@@ -218,9 +218,8 @@ function get_outlines_preview(results, pcb_config, pcb_name, points, units) {
         const ref = a.in(outline.outline, `pcbs.${pcb_name}.outlines.${outline_name}.outline`, Object.keys(results.outlines))
         const operation = u['stack']
         if (pcb_config.mirror) {
-            const {mirror_points, _} = u.splitMirrorPoints(points);
-            const mirror_outlines = outlines_lib.parse(config.outlines || {}, mirror_points, units)
-            outline_preview = operation(outline_preview, mirror_outlines[ref]);
+            const mirror_outlines = outlines_lib.mirrored(config.outlines, points, units)
+            outline_preview = operation(outline_preview, u.deepcopy(mirror_outlines[ref]));
         } else {
             outline_preview = operation(outline_preview, results.outlines[ref].raw)
         }

@@ -94,12 +94,10 @@ exports.parse = async (config, cases_config, outlines, previews, points, units) 
         }
     }
 
+    // the same originated copy io.twodee makes, without the DXF and SVG it would also render
     const mirror_outlines = {}
-    const { mirror_points, _} = u.splitMirrorPoints(points);
-    const mirror_outlines_raw = outlines_lib.parse(config.outlines || {}, mirror_points, units)
-
-    for (const [name, outline] of Object.entries(mirror_outlines_raw)) {
-        mirror_outlines[name] = io.twodee(outline)
+    for (const [name, outline] of Object.entries(outlines_lib.mirrored(config.outlines, points, units))) {
+        mirror_outlines[name] = { raw: m.model.originate({ models: { export: u.deepcopy(outline) }, units: 'mm' }) }
     }
 
     const wasm = await manifold.load()

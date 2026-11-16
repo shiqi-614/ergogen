@@ -272,3 +272,16 @@ exports.parse = (config_raw, points, units) => {
 
     return outlines
 }
+
+
+// The outlines of the mirrored half. pcbs and cases both need them: compute them once per points object (one
+// ergogen run) instead of once per use. Callers get the shared models, so they copy what they change.
+const mirrored = new WeakMap()
+exports.mirrored = (config_raw, points, units) => {
+    const cached = mirrored.get(points)
+    if (cached && cached.config_raw === config_raw && cached.units === units) return cached.outlines
+    const { mirror_points } = u.splitMirrorPoints(points)
+    const outlines = exports.parse(config_raw, mirror_points, units)
+    mirrored.set(points, { config_raw, units, outlines })
+    return outlines
+}

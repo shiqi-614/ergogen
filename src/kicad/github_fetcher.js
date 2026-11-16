@@ -17,9 +17,10 @@ async function fetchFromGithub(github) {
 
     try {
         const url = `${GITHUB_RAW_BASE_URL}/${github.repo}/main/${github.file}`;
-        const response = await axios.get(url);
+        const { data } = await axios.get(url);
+        const response = { data };
 
-        // 存储缓存数据和时间戳
+        // 存储缓存数据和时间戳（只存文件内容）
         gitCache.set(key, response);
 
         console.log('Fetched and cached data:', key);

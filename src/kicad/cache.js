@@ -15,6 +15,8 @@ class Cache {
       this.storageKey = `ergocai_cache_${name}`;
       localStorage.removeItem(LEGACY_STORAGE_KEY);
       this._loadFromStorage();
+      // a pending write must not be lost when the page goes away
+      window.addEventListener('pagehide', () => this._flush());
     } else {
       // Node.js 或非持久化模式使用 Map
       this.store = new Map();
@@ -30,12 +32,15 @@ class Cache {
         // 过滤掉已过期的数据
         this.store = new Map();
         const now = Date.now();
+        let dropped = false;
         for (const [key, entry] of Object.entries(data)) {
           if (entry.expire > now) {
             this.store.set(key, entry);
+          } else {
+            dropped = true;
           }
         }
-        this._saveToStorage();
+        if (dropped) this._saveToStorage();
       } else {
         this.store = new Map();
       }
@@ -60,6 +65,20 @@ class Cache {
     }
   }
 
+  // Writing re-serializes the whole store, so a burst of inserts (a cold run fetches dozens of files) is written
+  // once, a second after the last change, instead of once per insert.
+  _scheduleSave() {
+    if (!this.isBrowser || !this.usePersistent || this._saveTimer) return;
+    this._saveTimer = setTimeout(() => this._flush(), 1000);
+  }
+
+  _flush() {
+    if (!this._saveTimer) return;
+    clearTimeout(this._saveTimer);
+    this._saveTimer = null;
+    this._saveToStorage();
+  }
+
   _isExpired(entry) {
     return entry.expire <= Date.now();
   }
@@ -73,9 +92,7 @@ class Cache {
     this.store.set(key, entry);
 
     // 持久化存储
-    if (this.isBrowser && this.usePersistent) {
-      this._saveToStorage();
-    }
+    this._scheduleSave();
 
     return this;
   }
@@ -86,9 +103,7 @@ class Cache {
 
     if (this._isExpired(entry)) {
       this.store.delete(key);
-      if (this.isBrowser && this.usePersistent) {
-        this._saveToStorage();
-      }
+      this._scheduleSave();
       return undefined;
     }
 
@@ -101,9 +116,7 @@ class Cache {
 
     if (this._isExpired(entry)) {
       this.store.delete(key);
-      if (this.isBrowser && this.usePersistent) {
-        this._saveToStorage();
-      }
+      this._scheduleSave();
       return false;
     }
 
@@ -121,9 +134,7 @@ class Cache {
   // 删除指定 key
   delete(key) {
     const deleted = this.store.delete(key);
-    if (deleted && this.isBrowser && this.usePersistent) {
-      this._saveToStorage();
-    }
+    if (deleted) this._scheduleSave();
     return deleted;
   }
 
