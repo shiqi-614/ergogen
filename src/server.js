@@ -5,6 +5,12 @@ const ergogen = require('./ergogen')
 
 
 const app = express();
+
+// binary results (case STLs) cannot go into JSON as they are: send them as base64 strings
+const sendResults = (res, results) => res.status(201).type('json').send(JSON.stringify(
+    { message: 'Data received', results },
+    (key, value) => value instanceof Uint8Array ? Buffer.from(value).toString('base64') : value
+))
 const PORT = process.env.PORT || 3001;
 
 // Middleware
@@ -41,7 +47,7 @@ app.post('/api/ergogen', async (req, res) => {
     try {
         const data = req.body;
         const results = await ergogen.process(data, true, s => console.log(s));
-        res.status(201).json({ message: 'Data received', results });
+        sendResults(res, results);
     } catch (error) {
         handleError(error, res);
     }

@@ -27,6 +27,7 @@
     "jszip": "^3.10.1",
     "kle-serial": "github:ergogen/kle-serial#ergogen",
     "makerjs": "^0.19.2",
+    "manifold-3d": "^3.5.5",
     "mathjs": "^11.5.0",
     "node-fetch": "^3.3.2",
     "yargs": "^17.6.2"

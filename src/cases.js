@@ -6,6 +6,7 @@ const footprint_shape = require('./kicad/footprint_shape')
 const u = require("./utils");
 const outlines_lib = require("./outlines");
 const io = require("./io");
+const manifold = require("./manifold");
 
 
 function rectFromExtents(ext, expand = 0) {
@@ -86,43 +87,11 @@ exports.parse = async (config, cases_config, outlines, previews, points, units) 
 
     a.sane(cases_config, 'cases', 'object')()
 
-    const scripts = {}
-    const cases = {}
-    const results = {}
-
     const footprints = {}
     for (let [pcb, data] of Object.entries(previews)) {
         for (let [footprint, obj] of Object.entries(data['footprints'])) {
             footprints[`${pcb}.${footprint}`] = obj;
         }
-    }
-
-    const resolve = (case_name, resolved_scripts = new Set(), resolved_cases = new Set()) => {
-        for (const o of Object.values(cases[case_name].outline_dependencies)) {
-            resolved_scripts.add(o)
-        }
-        for (const c of Object.values(cases[case_name].case_dependencies)) {
-            if (!resolved_cases.has(c)) {
-                resolved_cases.add(c)
-                resolve(c, resolved_scripts, resolved_cases)
-            }
-        }
-
-        const result = []
-        for (const o of resolved_scripts) {
-            result.push(scripts[o] + '\n\n')
-        }
-        for (const c of resolved_cases) {
-            result.push(cases[c].body)
-        }
-        result.push(cases[case_name].body)
-        result.push(`
-            function main() {
-                return ${case_name}_case_fn();
-            }
-        `)
-
-        return result.join('')
     }
 
     const mirror_outlines = {}
@@ -133,6 +102,12 @@ exports.parse = async (config, cases_config, outlines, previews, points, units) 
         mirror_outlines[name] = io.twodee(outline)
     }
 
+    const wasm = await manifold.load()
+    // every case's solid stays alive until the last case is built: later cases can reuse earlier ones
+    const solids = {}
+    const results = {}
+
+    try {
     for (let [case_name, case_config] of Object.entries(cases_config)) {
         let mirrored = false;
         if (case_config.mirror) {
@@ -147,23 +122,18 @@ exports.parse = async (config, cases_config, outlines, previews, points, units) 
 
         const parts = a.sane(case_config, `cases.${case_name}`, 'object')()
 
-        const body = []
-        const case_dependencies = []
-        const outline_dependencies = []
-
-        let first = true
+        let result = null
 
         for (let [part_name, part] of Object.entries(parts)) {
 
             if (a.type(part)() === 'string') {
                 part = o.operation(part, {
                     outline: Object.keys(outlines),
-                    case: Object.keys(cases)
+                    case: Object.keys(solids)
                 }, ['case', 'outline'])
             }
 
             const part_qname = `cases.${case_name}.${part_name}`
-            const part_var = `${case_name}__part_${part_name}`
 
             a.unexpected(part, part_qname, [
                 'what', 'name', 'extrude', 'shift', 'rotate', 'operation', 'expand', 'layers', 'asym'
@@ -175,14 +145,13 @@ exports.parse = async (config, cases_config, outlines, previews, points, units) 
             const operation = a.in(part.operation || 'add', `${part_qname}.operation`, ['add', 'subtract', 'intersect'])
             const asym = part.asym || 'both'; // 默认值为 'both'
 
-            let base_expr
+            let solid = null
 
             if (what === 'outline' || what === 'pcb') {
                 const extrude = a.sane(part.extrude || 1, `${part_qname}.extrude`, 'number')(units)
                 const expand = a.sane(part.expand || 0, `${part_qname}.expand`, 'number')(units)
                 const layers = part.layers || ['F.CrtYd'];
                 const name_pattern = a.sane(part.name, `${part_qname}.name`, 'string')()
-                // const sourceDict = what === 'outline' ? outlines : footprints;
                 let sourceDict;
                 if (what === 'outline') {
                     if (mirrored) {
@@ -207,12 +176,10 @@ exports.parse = async (config, cases_config, outlines, previews, points, units) 
                     `Field "${part_qname}.name" did not match any outline!`
                 )
 
-                const outline_vars = []
+                const pieces = []
 
                 for (let idx = 0; idx < resolved.length; idx++) {
                     const { key, value } = resolved[idx];
-                    const combinedKey = `${case_name}_${key}`;
-                    const safeKey = combinedKey.replace(/\./g, '_').replace(/-/g, '_');
 
                     let outline;
                     if (what === 'pcb') {
@@ -233,98 +200,50 @@ exports.parse = async (config, cases_config, outlines, previews, points, units) 
                         outline = value.raw? value.raw.models.export : value;
                     }
 
-                    const extruded_name =
-                        `${safeKey}_extrude_` + ('' + extrude).replace(/\D/g, '_')
-
-                    if (!scripts[extruded_name]) {
-                        scripts[extruded_name] = m.exporter.toJscadScript(outline, {
-                            functionName: `${extruded_name}_outline_fn`,
-                            extrude,
-                            indent: 4
-                        })
-                    }
-
-                    outline_dependencies.push(extruded_name)
-
-                    const ov = `${part_var}__outline_${safeKey}`
-                    outline_vars.push(ov)
-
-                    body.push(`
-                        let ${ov} = ${extruded_name}_outline_fn();
-                    `)
+                    const piece = manifold.extrude(wasm, outline, extrude)
+                    if (piece) pieces.push(piece)
                 }
 
-                if (outline_vars.length === 0) {
+                if (pieces.length === 0) {
                     continue; // 跳过没有有效 outline 的部分
                 }
 
-                body.push(`
-                    let ${part_var} = ${outline_vars[0]};
-                `)
-
-                for (let i = 1; i < outline_vars.length; i++) {
-                    body.push(`
-                        ${part_var} = ${part_var}.union(${outline_vars[i]});
-                    `)
-                }
-
-                base_expr = part_var
+                solid = pieces.length === 1 ? pieces[0] : wasm.Manifold.union(pieces)
+                if (pieces.length > 1) pieces.forEach(p => p.delete())
 
             } else {
-                a.in(part.name, `${part_qname}.name`, Object.keys(cases))
-                case_dependencies.push(part.name)
-                base_expr = `${part.name}_case_fn()`
-
-                body.push(`
-                    let ${part_var} = ${base_expr};
-                `)
+                a.in(part.name, `${part_qname}.name`, Object.keys(solids))
+                solid = solids[part.name].translate([0, 0, 0])
             }
 
-            let op = 'union'
-            if (operation === 'subtract') op = 'subtract'
-            else if (operation === 'intersect') op = 'intersect'
-
-            let op_statement = `let result = ${part_var};`
-            if (!first) {
-                op_statement = `result = result.${op}(${part_var});`
+            // rotate about the part's own centre (in x and y), then shift it
+            if (!solid.isEmpty()) {
+                const {min, max} = solid.boundingBox()
+                const cx = (min[0] + max[0]) / 2
+                const cy = (min[1] + max[1]) / 2
+                const centred = solid.translate([-cx, -cy, 0])
+                const rotated = centred.rotate(rotate)
+                const placed = rotated.translate([cx + shift[0], cy + shift[1], shift[2]])
+                solid.delete(); centred.delete(); rotated.delete()
+                solid = placed
             }
-            first = false
 
-            body.push(`
-                let ${part_var}_bounds = ${part_var}.getBounds();
-                let ${part_var}_x =
-                    ${part_var}_bounds[0].x +
-                    (${part_var}_bounds[1].x - ${part_var}_bounds[0].x) / 2;
-                let ${part_var}_y =
-                    ${part_var}_bounds[0].y +
-                    (${part_var}_bounds[1].y - ${part_var}_bounds[0].y) / 2;
-
-                ${part_var} = ${part_var}. translate(
-                    [-${part_var}_x, -${part_var}_y, 0]
-                );
-
-                ${part_var} = ${part_var}.rotateX(${rotate[0]}).rotateY(${rotate[1]}).rotateZ(${rotate[2]});
-                ${part_var} = ${part_var}.translate(
-                    [${part_var}_x, ${part_var}_y, 0]
-                );
-
-                ${part_var} = ${part_var}.translate(${JSON.stringify(shift)});
-                ${op_statement}
-            `)
+            if (result === null) {
+                result = solid
+            } else {
+                const next = operation === 'subtract' ? result.subtract(solid)
+                    : operation === 'intersect' ? result.intersect(solid)
+                    : result.add(solid)
+                result.delete(); solid.delete()
+                result = next
+            }
         }
 
-        cases[case_name] = {
-            body: `
-                function ${case_name}_case_fn() {
-                    ${body.join('')}
-                    return result;
-                }
-            `,
-            case_dependencies,
-            outline_dependencies
-        }
-
-        results[case_name] = resolve(case_name)
+        solids[case_name] = result || new wasm.Manifold()
+        results[case_name] = manifold.toStl(solids[case_name])
+    }
+    } finally {
+        Object.values(solids).forEach(s => s.delete())
     }
 
     return results;
