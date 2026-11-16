@@ -157,11 +157,11 @@ class RectStrategy {
 class FpRectStrategy {
     convert(item) {
         var key = getId('fp_rect', item);
-        var rect = new m.models.Rectangle(
-            item.end.x - item.start.x, 
-            item.end.y - item.start.y 
-        )
-        rect.origin = [item.start.x, item.start.y];
+        const x0 = Math.min(item.start.x, item.end.x), x1 = Math.max(item.start.x, item.end.x);
+        const y0 = Math.min(item.start.y, item.end.y), y1 = Math.max(item.start.y, item.end.y);
+        var rect = new m.models.Rectangle(x1 - x0, y1 - y0)
+        // KiCad y points down, makerjs y up: flip like every other shape here (corner = lowest x, highest KiCad y)
+        rect.origin = [x0, y1 * -1];
         return {[key]: rect};
     }
 }
