@@ -1,5 +1,5 @@
 const { parseContent } = require('./mod_parser');
-const { fetchWhat } = require('./fetcher');
+const { fetchWhat, checkRepo } = require('./fetcher');
 const u = require('../utils')
 const Cache = require('./cache');
 const pcbCache = new Cache('kicad_pcb');
@@ -56,6 +56,8 @@ async function parsePcbContent(moduleConfig) {
     const what = u.normalizeWhat(moduleConfig.what);
     const key = u.getGithubKey(what.github);
     console.log("try to get " + key);
+    // drops the parsed copy too if the repo has changed the file
+    await checkRepo(what.github.repo);
     if (pcbCache.has(key)) {
         console.log("get from cache " + key);
         return pcbCache.get(key);

@@ -2,7 +2,8 @@
 // footprint is placed the way ergo-kbplacer places it and carries the reference it gets on the real board.
 const m = require('makerjs')
 const { parse, serialize, isList, head, str, child } = require('./sexpr')
-const { fetchWhat, normalizeWhat } = require('./fetcher')
+const { fetchWhat, normalizeWhat, checkRepo } = require('./fetcher')
+const Cache = require('./cache')
 
 // KicadGen puts one switch SW<index> and one diode D<index> per point into the schematic, taking the
 // last footprint whose name starts with "key" / "diode", and kbplacer places only those. kbplacer
@@ -191,12 +192,14 @@ const placeholder = (name) => ['footprint', {q: name}, ['layer', {q: 'F.Cu'}],
         ['effects', ['font', ['size', '0.8', '0.8'], ['thickness', '0.12']]]],
     ['fp_circle', ['center', '0', '0'], ['end', '1.5', '0'], ['stroke', ['width', '0.12'], ['type', 'solid']], ['layer', {q: 'F.Fab'}]]]
 
-const footprintCache = new Map()
+// in memory, and dropped like the other caches when the repo changes the file (checkRepo)
+const footprintCache = new Cache('preview_footprint', undefined, false)
 
-const loadFootprint = (what) => {
+const loadFootprint = async (what) => {
     const github = normalizeWhat(what)?.github
-    if (!github) return Promise.resolve(null)
+    if (!github) return null
     const key = `${github.repo}/${github.file}`
+    await checkRepo(github.repo)
     if (!footprintCache.has(key)) {
         footprintCache.set(key, fetchWhat(what)
             .then(text => {
@@ -204,7 +207,7 @@ const loadFootprint = (what) => {
                 return parse(text).find(n => head(n) === 'footprint' || head(n) === 'module') || null
             })
             .catch(error => {
-                // a missing file stays missing; anything else is retried on the next build
+                // a missing file stays missing until its repo changes; anything else is retried on the next build
                 if (error.response?.status === 404) {
                     console.error(`Preview board: ${key} not found`)
                     return null
@@ -217,12 +220,13 @@ const loadFootprint = (what) => {
 }
 
 // Pad nets of a module board: {names: {net code: name}, pins: {reference: pins as placeFootprint takes them}}
-const moduleNetCache = new Map()
+const moduleNetCache = new Cache('preview_module_nets', undefined, false)
 
-const loadModuleNets = (what) => {
+const loadModuleNets = async (what) => {
     const github = normalizeWhat(what)?.github
-    if (!github) return Promise.resolve(null)
+    if (!github) return null
     const key = `${github.repo}/${github.file}`
+    await checkRepo(github.repo)
     if (!moduleNetCache.has(key)) {
         moduleNetCache.set(key, fetchWhat(what)
             .then(text => {

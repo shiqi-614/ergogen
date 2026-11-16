@@ -1,4 +1,4 @@
-const { fetchFromGithub } = require('./github_fetcher');
+const { fetchFromGithub, checkRepo } = require('./github_fetcher');
 const { parseContent } = require('./mod_parser');
 const u = require('../utils')
 const Cache = require('./cache');
@@ -10,6 +10,8 @@ async function fetchKicadMod(what) {
     const normalizedWhat = normalizeWhat(what);
     if (normalizedWhat.github) {
         const key = u.getGithubKey(normalizedWhat.github);
+        // drops the parsed copy too if the repo has changed the file
+        await checkRepo(normalizedWhat.github.repo);
         if (modCache.has(key)) {
             return modCache.get(key);
         }
@@ -45,4 +47,4 @@ function normalizeWhat(what) {
 }
 
 
-module.exports = { fetchKicadMod, normalizeWhat, fetchWhat };
+module.exports = { fetchKicadMod, normalizeWhat, fetchWhat, checkRepo };

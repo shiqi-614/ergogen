@@ -45,8 +45,11 @@ async function getModulesFromPcb(pcb_config) {
     pcb_config.modules = u.convertArrayFieldToObject(pcb_config, 'modules');
     let modules = {};
 
-    for (const [name, moduleConfig] of Object.entries(pcb_config.modules)) {
-        const data = await parsePcbContent(moduleConfig)
+    // the module boards download in parallel
+    const entries = Object.entries(pcb_config.modules);
+    const contents = await Promise.all(entries.map(([, moduleConfig]) => parsePcbContent(moduleConfig)));
+    for (const [i, [name, moduleConfig]] of entries.entries()) {
+        const data = contents[i]
         const footprintsFromModule = await getFootprintsFromModule(moduleConfig, data);
         modules[name] = {
             what: moduleConfig.what,

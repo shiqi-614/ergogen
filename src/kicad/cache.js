@@ -1,6 +1,9 @@
 // 以前所有缓存共用这一个 localStorage key，而且 key 格式相同（repo/file），刷新页面后会互相读到对方的值
 const LEGACY_STORAGE_KEY = 'ergocai_cache_store';
 
+// every cache, so a changed GitHub file can be dropped from all of them
+const instances = [];
+
 class Cache {
   // name: 每个缓存一个，用作自己的 localStorage key
   constructor(name, ttl = 24 * 60 * 60 * 1000, usePersistent = true) {
@@ -20,6 +23,24 @@ class Cache {
     } else {
       // Node.js 或非持久化模式使用 Map
       this.store = new Map();
+    }
+    instances.push(this);
+  }
+
+  // Drops the files at `paths` of a GitHub repo ("owner/name") from every cache, or all of the repo's files when
+  // paths is null. Keys are "repo/file"; some callers give the repo with a trailing slash, hence the doubled ones.
+  static forget(repo, paths) {
+    const keys = paths && new Set(paths.map(path => `${repo}/${path}`));
+    for (const cache of instances) {
+      let dropped = false;
+      for (const key of [...cache.store.keys()]) {
+        const plain = key.replace(/\/{2,}/g, '/');
+        if (keys ? keys.has(plain) : plain.startsWith(`${repo}/`)) {
+          cache.store.delete(key);
+          dropped = true;
+        }
+      }
+      if (dropped) cache._scheduleSave();
     }
   }
 
