@@ -199,7 +199,14 @@ exports.parse = async (config, cases_config, outlines, previews, points, units) 
                     }
 
                     const piece = manifold.extrude(wasm, outline, extrude)
-                    if (piece) pieces.push(piece)
+                    if (piece) {
+                        pieces.push(piece)
+                    } else if (what === 'outline' && m.measure.modelExtents(outline)) {
+                        // lines that don't close into a shape are a mistake: skipped, the cut would just be missing
+                        pieces.forEach(p => p.delete())
+                        if (result) result.delete()
+                        throw new Error(`Outline "${key}" (${part_qname}.name) has lines but no closed shape, so there is nothing to extrude!`)
+                    }
                 }
 
                 if (pieces.length === 0) {
