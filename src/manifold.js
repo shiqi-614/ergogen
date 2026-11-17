@@ -84,6 +84,20 @@ exports.extrude = (wasm, model, height) => {
     return solid
 }
 
+// A solid known to be a prism from z = 0 to height, rebuilt by extruding its cross-section. Booleans on faces that
+// coincide exactly (a footprint's stabilizer cut sharing an edge with its key cut) can leave zero-thickness fins in
+// it, which previews draw as spikes into an opening; the cross-section, rid of repeated points, has no room for
+// them. The solid passed in is used up.
+exports.rebuildPrism = (solid, height) => {
+    const section = solid.slice(height / 2)
+    const clean = section.simplify(1e-6)
+    const rebuilt = clean.extrude(height)
+    section.delete()
+    clean.delete()
+    solid.delete()
+    return rebuilt
+}
+
 // binary STL of a solid
 exports.toStl = (solid) => {
     const {numProp, vertProperties: v, triVerts: t} = solid.getMesh()

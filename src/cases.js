@@ -121,6 +121,10 @@ exports.parse = async (config, cases_config, outlines, previews, points, units) 
         const parts = a.sane(case_config, `cases.${case_name}`, 'object')()
 
         let result = null
+        // Every part an extrusion from z = 0 that isn't shifted or rotated, the added ones of one height and the
+        // others at least as tall: the case is then a prism of that height (see manifold.rebuildPrism).
+        let height = null
+        let prism = true
 
         for (let [part_name, part] of Object.entries(parts)) {
 
@@ -144,9 +148,11 @@ exports.parse = async (config, cases_config, outlines, previews, points, units) 
             const asym = part.asym || 'both'; // 默认值为 'both'
 
             let solid = null
+            let part_height = null
 
             if (what === 'outline' || what === 'pcb') {
                 const extrude = a.sane(part.extrude || 1, `${part_qname}.extrude`, 'number')(units)
+                part_height = extrude
                 const expand = a.sane(part.expand || 0, `${part_qname}.expand`, 'number')(units)
                 const layers = part.layers || ['F.CrtYd'];
                 const name_pattern = a.sane(part.name, `${part_qname}.name`, 'string')()
@@ -233,6 +239,15 @@ exports.parse = async (config, cases_config, outlines, previews, points, units) 
                 solid = placed
             }
 
+            if (part_height === null || shift.some(v => v !== 0) || rotate.some(v => v !== 0)) {
+                prism = false
+            } else if (result === null || operation === 'add') {
+                if (height === null) height = part_height
+                else if (part_height !== height) prism = false
+            } else if (part_height < height) {
+                prism = false
+            }
+
             if (result === null) {
                 result = solid
             } else {
@@ -244,7 +259,9 @@ exports.parse = async (config, cases_config, outlines, previews, points, units) 
             }
         }
 
-        solids[case_name] = result || new wasm.Manifold()
+        solids[case_name] = !result ? new wasm.Manifold()
+            : prism && height ? manifold.rebuildPrism(result, height)
+            : result
         results[case_name] = manifold.toStl(solids[case_name])
     }
     } finally {
