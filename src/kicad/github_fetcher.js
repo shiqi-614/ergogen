@@ -73,6 +73,20 @@ function checkRepo(name) {
     return commit;
 }
 
+// The blob id of a file at the commit checkRepo last saw: undefined while that commit's files aren't known (GitHub
+// didn't answer), null when the commit has no such file.
+function blobOf(name, path) {
+    const known = repoCache.get(name.replace(/\/+$/, ''));
+    if (!known) return undefined;
+    return known.blobs[path] || null;
+}
+
+// where a file of a commit (or of a branch) is downloaded from
+function rawUrl(name, ref, path) {
+    const file = path.split('/').map(encodeURIComponent).join('/');
+    return `${GITHUB_RAW_BASE_URL}/${name.replace(/\/+$/, '')}/${ref}/${file}`;
+}
+
 // a file that several parts ask for at once is downloaded once
 const downloads = new Map();
 
@@ -108,4 +122,4 @@ async function fetchFromGithub(github) {
     }
 }
 
-module.exports = { fetchFromGithub, checkRepo };
+module.exports = { fetchFromGithub, checkRepo, blobOf, rawUrl };

@@ -11,6 +11,7 @@ const pcbs_preview_lib = require('./pcbs_preview')
 const fs = require('fs');
 const axios = require('axios');
 const stage_configs = require('./stage_configs');
+const github = require('./kicad/github_fetcher');
 const version = require('../package.json').version
 
 const processBasic = async (raw, debug=false, logger=()=>{}) => {
@@ -162,5 +163,11 @@ module.exports = {
     version,
     process,
     processBasic,
-    inject
+    inject,
+    // the GitHub files the footprints come from, for a host that reads more of those repos (3D models)
+    github: {
+        checkRepo: github.checkRepo,
+        blobOf: github.blobOf,
+        rawUrl: github.rawUrl
+    }
 }
