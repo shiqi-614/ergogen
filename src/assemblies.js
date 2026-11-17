@@ -11,8 +11,9 @@
 //         top: right_gap                        # its top level with that part's top; or `on: <part>`, lying on
 //                                               # it; or `z: <height>` of its bottom. `shift` moves it up or down
 //
-// Each result is {pcb: {name, z, thickness} or null, layers: [{name, z, height}]}, z being the bottom's height.
-// A part's height is the top of its solid, which cases.js extrudes up from z = 0.
+// Each result is {pcb, layers: [{name, z, height}]}, z being a bottom's height, and pcb null or {name, z, thickness,
+// shift, top, on}: how it was placed, for a host that moves it and writes the config back. A part's height is the
+// top of its solid, which cases.js extrudes up from z = 0.
 const a = require('./assert')
 
 // the preview board's thickness (kicad/preview_pcb.js)
@@ -67,8 +68,8 @@ const parsePcb = (raw, name, layers, pcbs, units) => {
     } else if (pcb.z !== undefined) {
         z = a.sane(pcb.z, `${name}.z`, 'number')(units)
     }
-    z += a.sane(pcb.shift || 0, `${name}.shift`, 'number')(units)
-    return {name: pcb_name, z, thickness: PCB_THICKNESS}
+    const shift = a.sane(pcb.shift || 0, `${name}.shift`, 'number')(units)
+    return {name: pcb_name, z: z + shift, thickness: PCB_THICKNESS, shift, top: pcb.top || null, on: pcb.on || null}
 }
 
 // cases: ergogen's case results ({name: {stl}}), pcbs: its pcb results
