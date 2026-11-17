@@ -42,7 +42,8 @@ function transformPoint(point, wherePoint, layer = "") {
 }
 
 async function getModulesFromPcb(pcb_config) {
-    pcb_config.modules = u.convertArrayFieldToObject(pcb_config, 'modules');
+    // a pcb without modules (or footprints, below) has none
+    pcb_config.modules = u.convertArrayFieldToObject(pcb_config, 'modules') || {};
     let modules = {};
 
     // the module boards download in parallel
@@ -244,7 +245,7 @@ exports.parse = async (results, points, units) => {
         if (pcb_config.mirror) {
             const origin_config = config.pcbs[pcb_config.mirror.from];
             pcb_config['outlines'] = pcb_config['outlines'] || origin_config['outlines'] || {};
-            const footprints = u.convertArrayFieldToObject(origin_config, 'footprints');
+            const footprints = u.convertArrayFieldToObject(origin_config, 'footprints') || {};
             const modules = await getModulesFromPcb(origin_config);
             const filteredFootprints = u.filterByAsym(footprints);
             const filteredModules = u.filterByAsym(modules);
@@ -258,7 +259,7 @@ exports.parse = async (results, points, units) => {
             }
 
         } else {
-            const footprints = u.convertArrayFieldToObject(pcb_config, 'footprints');
+            const footprints = u.convertArrayFieldToObject(pcb_config, 'footprints') || {};
             const modules = await getModulesFromPcb(pcb_config);
             const filteredFootprints = u.filterByAsym(footprints, 'clone');
             const filteredModules = u.filterByAsym(modules, 'clone');
