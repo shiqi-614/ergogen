@@ -121,6 +121,8 @@ exports.parse = async (config, cases_config, outlines, previews, points, units) 
         const parts = a.sane(case_config, `cases.${case_name}`, 'object')()
 
         let result = null
+        // what each part is and the shape it extruded, for a host that shows the parts (ergogen-gui's case editor)
+        const parts_info = []
         // Every part an extrusion from z = 0 that isn't shifted or rotated, the added ones of one height and the
         // others at least as tall: the case is then a prism of that height (see manifold.rebuildPrism).
         let height = null
@@ -181,6 +183,8 @@ exports.parse = async (config, cases_config, outlines, previews, points, units) 
                 )
 
                 const pieces = []
+                // the 2D shapes the pieces were extruded from
+                const shapes = []
 
                 for (let idx = 0; idx < resolved.length; idx++) {
                     const { key, value } = resolved[idx];
@@ -207,6 +211,7 @@ exports.parse = async (config, cases_config, outlines, previews, points, units) 
                     const piece = manifold.extrude(wasm, outline, extrude)
                     if (piece) {
                         pieces.push(piece)
+                        shapes.push(outline)
                     } else if (what === 'outline' && m.measure.modelExtents(outline)) {
                         // lines that don't close into a shape are a mistake: skipped, the cut would just be missing
                         pieces.forEach(p => p.delete())
@@ -214,6 +219,11 @@ exports.parse = async (config, cases_config, outlines, previews, points, units) 
                         throw new Error(`Outline "${key}" (${part_qname}.name) has lines but no closed shape, so there is nothing to extrude!`)
                     }
                 }
+
+                const info = {part: part_name, what, name: name_pattern, operation, extrude, expand, shift, rotate,
+                    matched: pieces.length, outline: shapes.length === 0 ? null
+                        : shapes.length === 1 ? shapes[0] : {models: Object.fromEntries(shapes.map((shape, i) => [i, shape]))}}
+                parts_info.push(info)
 
                 if (pieces.length === 0) {
                     continue; // 跳过没有有效 outline 的部分
@@ -225,6 +235,7 @@ exports.parse = async (config, cases_config, outlines, previews, points, units) 
             } else {
                 a.in(part.name, `${part_qname}.name`, Object.keys(solids))
                 solid = solids[part.name].translate([0, 0, 0])
+                parts_info.push({part: part_name, what, name: part.name, operation, extrude: null, expand: 0, shift, rotate, matched: 1, outline: null})
             }
 
             // rotate about the part's own centre (in x and y), then shift it
@@ -262,7 +273,7 @@ exports.parse = async (config, cases_config, outlines, previews, points, units) 
         solids[case_name] = !result ? new wasm.Manifold()
             : prism && height ? manifold.rebuildPrism(result, height)
             : result
-        results[case_name] = manifold.toStl(solids[case_name])
+        results[case_name] = {stl: manifold.toStl(solids[case_name]), parts: parts_info}
     }
     } finally {
         Object.values(solids).forEach(s => s.delete())

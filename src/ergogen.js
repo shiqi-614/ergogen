@@ -136,9 +136,10 @@ const process = async (raw, debug=false, logger=()=>{}) => {
     console.log('Modeling cases...')
     const cases = await cases_lib.parse(results.config, results.config.cases || {}, results.outlines, previews, results.points, results.units)
     results.cases = {}
-    for (const [case_name, stl] of Object.entries(cases)) {
+    for (const [case_name, made] of Object.entries(cases)) {
         if (!debug && case_name.startsWith('_')) continue
-        results.cases[case_name] = {stl}
+        // parts: each part of the case, with the 2D shape it extruded (cases.js)
+        results.cases[case_name] = {stl: made.stl, parts: made.parts}
     }
     console.log('Modeling cases done.')
 
