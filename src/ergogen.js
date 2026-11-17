@@ -6,6 +6,7 @@ const units_lib = require('./units')
 const points_lib = require('./points')
 const outlines_lib = require('./outlines')
 const cases_lib = require('./cases')
+const assemblies_lib = require('./assemblies')
 const pcbs_lib = require('./pcbs')
 const pcbs_preview_lib = require('./pcbs_preview')
 const fs = require('fs');
@@ -140,6 +141,11 @@ const process = async (raw, debug=false, logger=()=>{}) => {
         results.cases[case_name] = {stl}
     }
     console.log('Modeling cases done.')
+
+    if (results.config.assemblies) {
+        logger('Stacking assemblies...')
+        results.assemblies = assemblies_lib.parse(results.config.assemblies, results.cases, results.pcbs, units_lib.parse(results.config))
+    }
     return results;
 }
 
