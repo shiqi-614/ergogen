@@ -285,26 +285,14 @@ exports.convert = (footprint, filterLayers = null) => {
                 ? value
                 : [value];
             
-            // 过滤指定的层
+            // Layers asked for (a case part's `layers`) are taken as they are, so a footprint can draw what a case
+            // needs on any layer, Eco2.User say; without, the drawing layers layerCheck knows
             const filteredList = valueList.filter(item => {
-                // 首先执行原有的 layerCheck
-                if (!layerCheck(item)) return false;
-                
-                // 如果有 layerFilter 参数，进一步过滤
-                if (filterLayers) {
-                    const layers = Array.isArray(filterLayers) ? filterLayers : [filterLayers];
-
-                    if (item.layer)  {
-                        return layers.includes(item.layer);
-                    } else if (item.layers) {
-                        const res = layers.some(x => item.layers.includes(x));
-                        return res;
-                    } else {
-                        return false;
-                    }
-                }
-                
-                return true;
+                if (!filterLayers) return layerCheck(item);
+                const layers = Array.isArray(filterLayers) ? filterLayers : [filterLayers];
+                if (item.layer) return layers.includes(item.layer);
+                if (item.layers) return layers.some(x => item.layers.includes(x));
+                return false;
             });
             
             const convertedList = filteredList
