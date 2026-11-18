@@ -105,10 +105,9 @@ async function fetchFromGithub(github) {
             const { data } = await axios.get(url);
             const response = { data };
 
-            // 存储缓存数据和时间戳（只存文件内容）
+            // keep the file's text, with when it was fetched
             gitCache.set(key, response);
 
-            console.log('Fetched and cached data:', key);
 
             return response;
         })().finally(() => downloads.delete(key)));

@@ -1,50 +1,33 @@
-const { fetchFromGithub, checkRepo } = require('./github_fetcher');
-const { parseContent } = require('./mod_parser');
+// The footprints' files on GitHub (fetched through github_fetcher.js): a footprint's what is a path in ErgoCaiLib,
+// or {github: {repo, file}}; a .kicad_mod is parsed (mod_parser.js) and kept.
+const {fetchFromGithub, checkRepo} = require('./github_fetcher')
+const {parseContent} = require('./mod_parser')
 const u = require('../utils')
-const Cache = require('./cache');
-const modCache = new Cache('kicad_mod');
+const Cache = require('./cache')
+const modCache = new Cache('kicad_mod')
 
-
-async function fetchKicadMod(what) {
-    console.log("try to get footprint: " + JSON.stringify(what));
-    const normalizedWhat = normalizeWhat(what);
-    if (normalizedWhat.github) {
-        const key = u.getGithubKey(normalizedWhat.github);
-        // drops the parsed copy too if the repo has changed the file
-        await checkRepo(normalizedWhat.github.repo);
-        if (modCache.has(key)) {
-            return modCache.get(key);
-        }
-        const response = await fetchFromGithub(normalizedWhat.github);
-        const data = parseContent(response.data);
-        modCache.set(key, data);
-        return data;
-    }
-}
-
-async function fetchWhat(what) {
-    const normalizedWhat = normalizeWhat(what);
-    if (normalizedWhat.github) {
-        const response = await fetchFromGithub(normalizedWhat.github);
-        return response.data;
-    }
-}
-
+// a footprint's what as {github: {repo, file}}: a plain path is one in ErgoCaiLib
 function normalizeWhat(what) {
-    if ('string' === typeof what) {
-        return {
-            github: {
-                repo: 'shiqi-614/ErgoCaiLib',
-                file: what
-            }
-        };
-         
-    } else if (what.github) {
-        return {
-            github: { ...what.github }
-        };
-    }
+    if (typeof what === 'string') return {github: {repo: 'shiqi-614/ErgoCaiLib', file: what}}
+    if (what.github) return {github: {...what.github}}
 }
 
+// A footprint's .kicad_mod, parsed; the parsed copy goes when its repo changes the file (checkRepo)
+async function fetchKicadMod(what) {
+    const {github} = normalizeWhat(what)
+    if (!github) return
+    const key = u.getGithubKey(github)
+    await checkRepo(github.repo)
+    if (modCache.has(key)) return modCache.get(key)
+    const data = parseContent((await fetchFromGithub(github)).data)
+    modCache.set(key, data)
+    return data
+}
 
-module.exports = { fetchKicadMod, normalizeWhat, fetchWhat, checkRepo };
+// a file what names, as text
+async function fetchWhat(what) {
+    const {github} = normalizeWhat(what)
+    if (github) return (await fetchFromGithub(github)).data
+}
+
+module.exports = {fetchKicadMod, normalizeWhat, fetchWhat, checkRepo}

@@ -1,27 +1,28 @@
-// 以前所有缓存共用这一个 localStorage key，而且 key 格式相同（repo/file），刷新页面后会互相读到对方的值
+// A key-value store with expiry for what ergogen fetches from GitHub: in localStorage in a browser (one key per
+// cache), else in memory.
+
+// Every cache once shared this one localStorage key, with keys of the same form (repo/file): after a reload each read
+// the others' values. It is removed.
 const LEGACY_STORAGE_KEY = 'ergocai_cache_store';
 
 // every cache, so a changed GitHub file can be dropped from all of them
 const instances = [];
 
 class Cache {
-  // name: 每个缓存一个，用作自己的 localStorage key
+  // name: the cache's own, its localStorage key; usePersistent false keeps it in memory in a browser too
   constructor(name, ttl = 24 * 60 * 60 * 1000, usePersistent = true) {
     this.ttl = ttl;
     this.usePersistent = usePersistent;
 
-    // 检测是否在浏览器环境
     this.isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined';
 
     if (this.isBrowser && this.usePersistent) {
-      // 浏览器环境使用 localStorage
       this.storageKey = `ergocai_cache_${name}`;
       localStorage.removeItem(LEGACY_STORAGE_KEY);
       this._loadFromStorage();
       // a pending write must not be lost when the page goes away
       window.addEventListener('pagehide', () => this._flush());
     } else {
-      // Node.js 或非持久化模式使用 Map
       this.store = new Map();
     }
     instances.push(this);
@@ -44,13 +45,12 @@ class Cache {
     }
   }
 
-  // 从 localStorage 加载数据
+  // the stored entries that have not expired (the expired ones are written away)
   _loadFromStorage() {
     try {
       const stored = localStorage.getItem(this.storageKey);
       if (stored) {
         const data = JSON.parse(stored);
-        // 过滤掉已过期的数据
         this.store = new Map();
         const now = Date.now();
         let dropped = false;
@@ -71,7 +71,6 @@ class Cache {
     }
   }
 
-  // 保存到 localStorage
   _saveToStorage() {
     if (!this.isBrowser || !this.usePersistent) return;
 
@@ -112,7 +111,6 @@ class Cache {
 
     this.store.set(key, entry);
 
-    // 持久化存储
     this._scheduleSave();
 
     return this;
@@ -144,7 +142,6 @@ class Cache {
     return true;
   }
 
-  // 清除所有缓存
   clear() {
     this.store.clear();
     if (this.isBrowser && this.usePersistent) {
@@ -152,19 +149,16 @@ class Cache {
     }
   }
 
-  // 删除指定 key
   delete(key) {
     const deleted = this.store.delete(key);
     if (deleted) this._scheduleSave();
     return deleted;
   }
 
-  // 获取缓存大小
   size() {
     return this.store.size;
   }
 
-  // 获取所有 keys
   keys() {
     return Array.from(this.store.keys());
   }

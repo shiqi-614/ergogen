@@ -111,7 +111,7 @@ exports.twodee = (model, debug) => {
     if (debug) {
         const svgOptions = {
             stroke: 'black',
-            strokeWidth: 1.0  // 这里设置线条粗细
+            strokeWidth: 1.0  // the lines' thickness
         };
 
         result.svg = makerjs.exporter.toSVG(assembly, svgOptions)

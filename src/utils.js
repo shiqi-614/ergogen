@@ -60,73 +60,14 @@ const convertArrayFieldToObject = exports.convertArrayFieldToObject = (data, fie
     return data[fieldName];
 }
 
-const merge = exports.merge = (whereParent, whereChild) => {
-    if (whereParent == null && whereChild == null) {
-        return null;
-    }
-    const where = deepcopy(whereParent);
-    where.rotate = combineNumber(whereParent?.rotate ?? 0,  whereChild?.rotate ?? 0);
-    where.shift = combineNumber(whereParent?.shift ?? 0, whereChild?.shift ?? 0);
-    return where;
-}
-
-function combineNumber(obj1, obj2) {
-    const shift1 = obj1 ?? 0;
-    const shift2 = obj2 ?? 0;
-
-    // If both shifts are numbers
-    if (typeof shift1 === 'number' && typeof shift2 === 'number') {
-        return shift1 + shift2;
-    }
-
-    // If one or both shifts are arrays
-    const array1 = Array.isArray(shift1) ? shift1 : [shift1];
-    const array2 = Array.isArray(shift2) ? shift2 : [shift2];
-
-    // Find the maximum length of the two arrays
-    const maxLength = Math.max(array1.length, array2.length);
-
-    // Create a new array by adding corresponding elements
-    const result = [];
-    for (let i = 0; i < maxLength; i++) {
-        const val1 = array1[i] || 0; // Default to 0 if array1 is shorter
-        const val2 = array2[i] || 0; // Default to 0 if array2 is shorter
-        result.push(val1 + val2);
-    }
-
-    return result;
-}
-
-function degToRad(deg) {
-    return deg * Math.PI / 180;
-}
-
-function rotateAroundCenter(point, center, angleDeg) {
-    const angle = degToRad(angleDeg);
-    const cos = Math.cos(angle);
-    const sin = Math.sin(angle);
-
-    const dx = point[0] - center[0];
-    const dy = point[1] - center[1];
-
-    const rx = dx * cos - dy * sin;
-    const ry = dx * sin + dy * cos;
-
-    return [center[0] + rx, center[1] + ry];
-}
-
-const mergeWhereFromParent = exports.mergePointFromParent = (modulePoint,  footprintWhere = {}) => {
-    const fpPoint = modulePoint.clone()
-    fpPoint.meta.mirrored = false
-
-    const fpShift = footprintWhere.shift || [0, 0];
-    let fpRotate = footprintWhere.rotate || 0;
-    // const newShift = rotateAroundCenter(fpShift, modulePoint, modulePoint.r * -1)
-    fpPoint.shift(fpShift)
-    fpPoint.rotate(fpRotate, [fpPoint.x, fpPoint.y]);
-    // fpPoint.rotate(modulePoint.r, [modulePoint.x, modulePoint.y]);
-
-    return fpPoint;
+// Where a module's footprint lands: the module's point, shifted by the footprint's place on the module board, then
+// turned about itself by the footprint's angle there
+exports.pointOnModule = (modulePoint, footprintWhere = {}) => {
+    const point = modulePoint.clone()
+    point.meta.mirrored = false
+    point.shift(footprintWhere.shift || [0, 0])
+    point.rotate(footprintWhere.rotate || 0, [point.x, point.y])
+    return point
 }
 
 const deep = exports.deep = (obj, key, val) => {
@@ -235,23 +176,7 @@ exports.stack = (a, b) => {
 }
 
 
-exports.normalizeWhat = (what) => {
-    if ('string' === typeof what) {
-        return {
-            github: {
-                repo: 'shiqi-614/ErgoCaiLib',
-                file: what
-            }
-        };
-         
-    } else if (what.github) {
-        return {
-            github: { ...what.github }
-        };
-    }
-}
-
-
+// the key a GitHub file is cached under: "owner/repo/path"
 exports.getGithubKey = (github) => {
     return [github.repo, github.file].join("/");
 }
@@ -299,7 +224,3 @@ exports.createDefaultKey = (units) => ({
     colrow: '{{col.name}}_{{row}}',
     name: '{{zone.name}}_{{colrow}}',
 });
-
-exports.isNode = () =>
-    typeof process !== "undefined" && 
-    process.versions?.node != null;

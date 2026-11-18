@@ -1,56 +1,31 @@
+// A footprint's shape on the layers a case part asks for, for the cut it makes (cases.js): its drawings and pads as
+// makerjs paths and models (shape_converter.js), turned over when the footprint is on the back.
 const m = require('makerjs')
 const u = require('../utils')
-const o = require('../operation')
-const { fetchKicadMod, normalizeWhat, fetchWhat } = require('./fetcher');
+const {fetchKicadMod} = require('./fetcher')
 const kicad_shape_converter = require('./shape_converter')
 
-
-function flipVertically(res) {
-    // 遍历 models 并垂直翻转
-    if (res.models) {
-        for (let key in res.models) {
-            if (res.models.hasOwnProperty(key)) {
-                res.models[key] = m.model.mirror(res.models[key], true, false); // 垂直翻转
-                res.models[key] = m.model.rotate(res.models[key], 180);
-            }
-        }
-    }
-
-    // 遍历 paths 并垂直翻转
-    if (res.paths) {
-        for (let key in res.paths) {
-            if (res.paths.hasOwnProperty(key)) {
-                res.paths[key] = m.path.mirror(res.paths[key], true, false); // 垂直翻转
-                res.paths[key] = m.path.rotate(res.paths[key], 180);
-            }
-        }
-    }
-
-    return res;
+// on the back: mirrored left to right (mirrored top to bottom, then turned half a turn)
+const toTheBack = shape => {
+    for (const key of Object.keys(shape.models || {})) shape.models[key] = m.model.rotate(m.model.mirror(shape.models[key], true, false), 180)
+    for (const key of Object.keys(shape.paths || {})) shape.paths[key] = m.path.rotate(m.path.mirror(shape.paths[key], true, false), 180)
+    return shape
 }
 
-
+// A maker of the footprint's shape: each call a fresh copy, with what bounds it. A mounting hole is bounded by its own
+// shape, so its cut can stay round (cases.js takes its largest circle).
 exports.parse = async (footprintConfig, filterLayers = null) => {
-    console.log("draw footprint: " + JSON.stringify(footprintConfig.what));
-    const jsonObj = await fetchKicadMod(footprintConfig.what);
-
-    let [pathItems, modelItems] = kicad_shape_converter.convert(jsonObj.footprint, filterLayers);
-    
+    const kicadMod = await fetchKicadMod(footprintConfig.what)
+    const [paths, models] = kicad_shape_converter.convert(kicadMod.footprint, filterLayers)
     return () => {
-        const res = {
-            models: u.deepcopy(modelItems),
-            paths: u.deepcopy(pathItems)
-        };
-        if (footprintConfig.side && footprintConfig.side.toLowerCase() === "back") {
-            res.layer = "olive";
-            flipVertically(res);
+        const shape = {models: u.deepcopy(models), paths: u.deepcopy(paths)}
+        if (footprintConfig.side && footprintConfig.side.toLowerCase() === 'back') {
+            shape.layer = 'olive'
+            toTheBack(shape)
         } else {
-            res.layer = "aqua";
+            shape.layer = 'aqua'
         }
-        if (jsonObj.footprint.name.startsWith("MountingHole")) {
-            return [res, res];
-        }
-        const bbox = m.measure.modelExtents(res);
-        return [res, bbox];
-    };
-};
+        if (kicadMod.footprint.name.startsWith('MountingHole')) return [shape, shape]
+        return [shape, m.measure.modelExtents(shape)]
+    }
+}

@@ -1,3 +1,7 @@
+// A KiCad file (.kicad_mod, .kicad_pcb) read into plain objects, the way shape_converter.js and pcb_extractor.js use
+// them: each (key …) becomes a key of its parent, its value parsed by what the key is (coordinates, a size, layers, a
+// property …); a key that comes again becomes a list. Text inside quotes is taken as it is.
+
 module.exports = { parseContent };
 
 function parseContent(content) {
@@ -8,29 +12,26 @@ function parseContent(content) {
     contentObjStack.push(["root", result]);
     let currentContent = '';
     let curObj = result;
-    let isComment = false;
+    let inString = false;
 
     for (let i = 0; i < content.length; i++) {
         const char = content[i];
-        if (isComment) {
+        if (inString) {
             currentContent += char;
             if (char == '"') {
-                isComment = false;
+                inString = false;
             }
         } else {
             if (char === '(') {
-                if (currentContent.trim()) {
-                    // console.log("currentContent: " + currentContent);
+                if (currentContent.trim()) {;
                     const section  = parseSection(currentContent);
                     if (section) {
                         const {key, data} = section;
                         if (typeof data === 'object' && data !== null) {
-                            // console.log("push key:" + key + " data: " + JSON.stringify(data))
                             contentObjStack.push([key, data]);
                             updateOrAppendToKey(curObj, key, data);
                             curObj = data;
                         } else {
-                            // console.log("not push key:" + key + " data: " + JSON.stringify(data))
                             updateOrAppendToKey(curObj, key, data);
                         }
                     }
@@ -43,12 +44,11 @@ function parseContent(content) {
                     const section  = parseSection(currentContent);
                     if (section) {
                         let {key, data} = section;
-                        // console.log("end key:" + key + " data: " + JSON.stringify(data))
                         updateOrAppendToKey(curObj, key, data);
                     }
                 } else {
                     if (contentObjStack.length > 0) {
-                        contentObjStack.pop();  // 弹出当前作用域
+                        contentObjStack.pop();  // the list that just closed
 
                         if (contentObjStack.length > 0) {
                             const [key, data] = contentObjStack[contentObjStack.length - 1];
@@ -64,17 +64,17 @@ function parseContent(content) {
             } else {
                 currentContent += char;
                 if (char == '"') {
-                    isComment = true;
+                    inString = true;
                 }
             }
         }
-    }
-    // console.log("root:" + JSON.stringify(result));
+    };
 
     return result;
 }
 
 
+// One (key …) list's own text, without the lists inside it: its key and what it holds
 function parseSection(section) {
 
     const words = section.match(/\b[\w-./]+\b/g);
@@ -190,10 +190,10 @@ function parseLayers(section) {
     let match;
     while ((match = regex.exec(section)) !== null) {
         if (match[1]) {
-            // 匹配到 *.Cu 或 *.Mask 的情况
+            // *.Cu, *.Mask: every layer of that kind
             matches.push(match[1]);
         } else if (match[2]) {
-            // 匹配到 "F.Cu"、"F.Paste"、"F.Mask" 的情况
+            // "F.Cu", "F.Paste", "F.Mask": one layer
             matches.push(match[2]);
         }
     }
@@ -203,9 +203,9 @@ function parseLayers(section) {
     } else {
         return matches[0];
     }
-    // 用空格分隔并返回结果
 }
 
+// a key seen once is a value, seen again a list of them
 function updateOrAppendToKey(curObj, key, data) {
     if (curObj.hasOwnProperty(key)) {
         if (!Array.isArray(curObj[key])) {
@@ -219,6 +219,7 @@ function updateOrAppendToKey(curObj, key, data) {
     }
 }
 
+// a (property "Name" "value") or (fp_text "name" "value")'s name and value, its spaces squeezed
 function extractProperty(input) {
     const match = input.match(/"([\w\s]+)"\s+"([^"]*)"/); 
     if (!match) {
@@ -231,5 +232,5 @@ function extractProperty(input) {
         .filter(v => v.length > 0) 
         .join(' '); 
 
-    return { property, value }; // 如果 value 是空字符串，也会返回
+    return { property, value }; // an empty value too
 }

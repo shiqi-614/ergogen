@@ -240,7 +240,6 @@ exports.parse = (config_raw, points, units, errors) => {
                 // and then the shape is repeated for all where positions
                 for (const w of where(shape_units)) {
                     const point = adjust(w.clone())
-                    // console.log("outline point: " + JSON.stringify(point));
                     let [shape, bbox] = shape_maker(point) // point is passed for mirroring metadata only...
                     if (bound) {
                         shape = binding(shape, bbox, point, shape_units)

@@ -1,7 +1,16 @@
+// ergogen: a config (YAML, JSON or KLE) in, everything it describes out. In order: the units, the key points, the
+// outlines, the pcbs (their parts placed, then a KiCad board each to preview), the KiCad projects (only when asked
+// for: a "Generate" on the server, through kicadgen), the cases and the assemblies.
+//
+// With options.tolerant (ergogen-gui's preview), every outline, pcb, case and assembly is made on its own: one that
+// fails is noted in results.errors under its name (e.g. "pcbs.left": the message) and the others are still made.
+// Points stay all or nothing, everything else is made of them. Without it, any failure fails the run, as before.
+// With options.skip: ['cases'], the cases (the slowest part, solids and STL) and the assemblies made of them are
+// left out, for a host that shows something else for now.
+
 const u = require('./utils')
 const io = require('./io')
 const prepare = require('./prepare')
-const yaml = require('js-yaml')
 const units_lib = require('./units')
 const points_lib = require('./points')
 const outlines_lib = require('./outlines')
@@ -9,58 +18,48 @@ const cases_lib = require('./cases')
 const assemblies_lib = require('./assemblies')
 const pcbs_lib = require('./pcbs')
 const pcbs_preview_lib = require('./pcbs_preview')
-const fs = require('fs');
-const axios = require('axios');
-const stage_configs = require('./stage_configs');
-const github = require('./kicad/github_fetcher');
+const axios = require('axios')
+const stage_configs = require('./stage_configs')
+const github = require('./kicad/github_fetcher')
 const version = require('../package.json').version
 
-// With options.tolerant (ergogen-gui's preview), every outline, pcb, case and assembly is made on its own: one that
-// fails is noted in results.errors under its name (e.g. "pcbs.left": the message) and the others are still made.
-// Points stay all or nothing, everything else is made of them. Without it, any failure fails the run, as before.
-// With options.skip: ['cases'], the cases (the slowest part, solids and STL) and the assemblies made of them are
-// left out, for a host that shows something else for now.
-const processBasic = async (raw, debug=false, logger=()=>{}, options={}) => {
-    const prefix = 'Interpreting format: '
-    let empty = true
-    let [config, format] = io.interpret(raw, logger)
-    let suffix = format
-    logger(prefix + suffix)
-    
+// the config as read, expanded: dotted keys nested, $extends merged, parameters filled in
+const readConfig = (raw, logger) => {
+    const [read, format] = io.interpret(raw, logger)
+    logger('Interpreting format: ' + format)
     logger('Preprocessing input...')
-    config = prepare.unnest(config)
-    config = prepare.inherit(config)
-    config = prepare.parameterize(config)
-    const results = {}
-    results.raw = config.raw;
-    delete config.raw;
+    return prepare.parameterize(prepare.inherit(prepare.unnest(read)))
+}
 
+const checkEngine = (config, logger) => {
+    if (!config.meta || !config.meta.engine) return
+    logger('Checking compatibility...')
+    const engine = u.semver(config.meta.engine, 'config.meta.engine')
+    if (!u.satisfies(version, engine)) {
+        throw new Error(`Current ergogen version (${version}) doesn't satisfy config's engine requirement (${config.meta.engine})!`)
+    }
+}
+
+// The units, points, outlines and pcbs (their parts placed). A run that would show nothing (every outline a hidden
+// "_" one, no pcbs) is made again in debug mode, which shows everything.
+const processBasic = async (raw, debug = false, logger = () => {}, options = {}) => {
+    const config = readConfig(raw, logger)
+    const results = {raw: config.raw}
+    delete config.raw
     results.canonical = u.deepcopy(config)
-    results.config = config;
+    results.config = config
     if (options.tolerant) results.errors = {}
 
-    if (config.meta && config.meta.engine) {
-        logger('Checking compatibility...')
-        const engine = u.semver(config.meta.engine, 'config.meta.engine')
-        if (!u.satisfies(version, engine)) {
-            throw new Error(`Current ergogen version (${version}) doesn\'t satisfy config's engine requirement (${config.meta.engine})!`)
-        }
-    }
+    checkEngine(config, logger)
 
     logger('Calculating variables...')
     const units = units_lib.parse(config)
-    if (debug) {
-        results.units = units
-    }
-    
+    if (debug) results.units = units
+
     logger('Parsing points...')
-    if (!config.points) {
-        throw new Error('Input does not contain a points clause!')
-    }
+    if (!config.points) throw new Error('Input does not contain a points clause!')
     const points = points_lib.parse(config.points, units)
-    if (!Object.keys(points).length) {
-        throw new Error('Input does not contain any points!')
-    }
+    if (!Object.keys(points).length) throw new Error('Input does not contain any points!')
     if (debug) {
         results.points = points
         results.demo = io.twodee(points_lib.visualize(points, units), debug)
@@ -72,18 +71,13 @@ const processBasic = async (raw, debug=false, logger=()=>{}, options={}) => {
     for (const [name, outline] of Object.entries(outlines)) {
         if (!debug && name.startsWith('_')) continue
         results.outlines[name] = io.twodee(outline, debug)
-        empty = false
     }
 
     logger('Scaffolding PCBs...')
-    const pcbs = await pcbs_lib.parse(results, points, units)
-    results.pcbs = {}
-    for (const [pcb_name, pcb_text] of Object.entries(pcbs)) {
-        results.pcbs[pcb_name] = pcb_text
-        empty = false
-    }
-    results.points = points;
+    results.pcbs = {...await pcbs_lib.parse(results, points, units)}
+    results.points = points
 
+    const empty = !Object.keys(results.outlines).length && !Object.keys(results.pcbs).length
     if (!debug && empty) {
         logger('Output would be empty, rerunning in debug mode...')
         return processBasic(raw, true, () => {}, options)
@@ -91,90 +85,66 @@ const processBasic = async (raw, debug=false, logger=()=>{}, options={}) => {
     return results
 }
 
-const process = async (raw, debug=false, logger=()=>{}, options={}) => {
-    const results = await processBasic(raw, debug, logger, options);
-    
-    logger('Preview PCBs...')
-    const previews = await pcbs_preview_lib.parse(results.config, results.pcbs, results.errors);
-    for (const [pcb_name, preview] of Object.entries(previews)) {
-        console.log("preview: " + pcb_name);
-        results.pcbs[pcb_name]['preview'] = { kicad_pcb: preview['kicad_pcb'] };
-    }
-    results.demo = io.twodee(points_lib.visualize(results.points, results.units), debug);
-
-    if (results.canonical?.is_preview === false) {
-        logger("Creating KiCad Project..." + stage_configs.KICADGEN_API_URL)
-        try {
-            results.kicad = {};
-            const { mirror_points, normal_points } = u.splitMirrorPoints(results.points);
-            for (const [pcb_name, pcb_config] of Object.entries(results.canonical.pcbs)) {
-                let effective_points = normal_points;
-
-                if (pcb_config.mirror) {
-                    effective_config = results.config.pcbs[pcb_config.mirror.from];
-                    effective_points = mirror_points;
-                }
-
-                const response = await axios.post(stage_configs.KICADGEN_API_URL,
-                    {
-                        "points": effective_points,
-                        "pcb" : {
-                            "name": pcb_name,
-                        },
-                        "results": results
-                    },
-                    {
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        responseType: 'arraybuffer'
-                    }
-                );
-                const zipBuffer = Buffer.from(response.data, 'binary').toString('base64');
-                results.kicad[pcb_name] = zipBuffer;
-            }
-            logger("Create KiCad Project without error.")
-        } catch (error) {
-            console.error('There was a problem with the fetch operation:', error);
+// The KiCad project of every pcb, from kicadgen (the server's "Generate"): a zip each, base64. A failure is logged
+// and leaves the projects out.
+const kicadProjects = async (results, logger) => {
+    logger('Creating KiCad Project...' + stage_configs.KICADGEN_API_URL)
+    try {
+        results.kicad = {}
+        const {mirror_points, normal_points} = u.splitMirrorPoints(results.points)
+        for (const [name, pcbConfig] of Object.entries(results.canonical.pcbs)) {
+            // a mirrored pcb is placed on the mirrored points
+            const points = pcbConfig.mirror ? mirror_points : normal_points
+            const response = await axios.post(stage_configs.KICADGEN_API_URL,
+                {points, pcb: {name}, results},
+                {headers: {'Content-Type': 'application/json'}, responseType: 'arraybuffer'})
+            results.kicad[name] = Buffer.from(response.data, 'binary').toString('base64')
         }
+        logger('Create KiCad Project without error.')
+    } catch (error) {
+        console.error('There was a problem with the fetch operation:', error)
     }
+}
+
+// Everything: what processBasic makes, then each pcb's KiCad preview board, the KiCad projects when asked for (a
+// config with is_preview: false), the cases and the assemblies
+const process = async (raw, debug = false, logger = () => {}, options = {}) => {
+    const results = await processBasic(raw, debug, logger, options)
+
+    logger('Preview PCBs...')
+    const previews = await pcbs_preview_lib.parse(results.config, results.pcbs, results.errors)
+    for (const [name, preview] of Object.entries(previews)) {
+        results.pcbs[name].preview = {kicad_pcb: preview.kicad_pcb}
+    }
+    results.demo = io.twodee(points_lib.visualize(results.points, results.units), debug)
+
+    if (results.canonical?.is_preview === false) await kicadProjects(results, logger)
 
     if ((options.skip || []).includes('cases')) {
         logger('Leaving out the cases and the assemblies, as asked')
-        return results;
+        return results
     }
 
-    console.log('Modeling cases...')
+    logger('Modeling cases...')
     const cases = await cases_lib.parse(results.config, results.config.cases || {}, results.outlines, previews, results.points, results.units, results.errors)
     results.cases = {}
-    for (const [case_name, made] of Object.entries(cases)) {
-        if (!debug && case_name.startsWith('_')) continue
-        // parts: each part of the case, with the 2D shape it extruded (cases.js)
-        results.cases[case_name] = {stl: made.stl, parts: made.parts}
+    for (const [name, made] of Object.entries(cases)) {
+        if (!debug && name.startsWith('_')) continue
+        results.cases[name] = {stl: made.stl, parts: made.parts}
     }
-    console.log('Modeling cases done.')
 
     if (results.config.assemblies) {
         logger('Stacking assemblies...')
         results.assemblies = assemblies_lib.parse(results.config.assemblies, results.cases, results.pcbs, units_lib.parse(results.config), results.errors)
     }
-    return results;
+    return results
 }
 
-const inject = (type, name, value) => {
-    if (value === undefined) {
-        value = name
-        name = type
-        type = 'footprint'
-    }
-    switch (type) {
-        case 'footprint':
-            return pcbs_lib.inject_footprint(name, value)
-        case 'template':
-            return pcbs_lib.inject_template(name, value)
-        default:
-            throw new Error(`Unknown injection type "${type}" with name "${name}" and value "${value}"!`)
-    }
+// Upstream ergogen's footprint and template injection (JavaScript footprints). This fork's footprints are KiCad
+// files (what: github), so there is nothing to inject into: a call says so.
+const inject = (type, name) => {
+    throw new Error(`Injecting ${name === undefined ? 'a footprint' : `the ${type} "${name}"`} is not supported: `
+        + 'this ergogen takes its footprints from KiCad files (what: github)')
 }
 
 module.exports = {
@@ -186,6 +156,6 @@ module.exports = {
     github: {
         checkRepo: github.checkRepo,
         blobOf: github.blobOf,
-        rawUrl: github.rawUrl
-    }
+        rawUrl: github.rawUrl,
+    },
 }

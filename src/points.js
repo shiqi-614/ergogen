@@ -5,7 +5,7 @@ const prep = require('./prepare')
 const anchor_lib = require('./anchor')
 
 
-// 通用工具函数
+// shared helpers
 const ensureObject = (obj, path) => a.sane(obj || {}, path, 'object')();
 const ensureNumber = (val, path, units, defaultValue = 0) =>
     a.sane(val ?? defaultValue, path, 'number')(units);
