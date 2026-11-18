@@ -222,7 +222,7 @@ function get_outlines_preview(results, pcb_config, pcb_name, points, units) {
         const ref = a.in(outline.outline, `pcbs.${pcb_name}.outlines.${outline_name}.outline`, Object.keys(results.outlines))
         const operation = u['stack']
         if (pcb_config.mirror) {
-            const mirror_outlines = outlines_lib.mirrored(config.outlines, points, units)
+            const mirror_outlines = outlines_lib.mirrored(config.outlines, points, units, results.errors)
             outline_preview = operation(outline_preview, u.deepcopy(mirror_outlines[ref]));
         } else {
             outline_preview = operation(outline_preview, results.outlines[ref].raw)
@@ -241,33 +241,37 @@ exports.parse = async (results, points, units) => {
 
     const { mirror_points, normal_points } = u.splitMirrorPoints(points);
     for (const [pcb_name, pcb_config] of Object.entries(config.pcbs)) {
-        let pcb = pcbs[pcb_name] = {};
-        if (pcb_config.mirror) {
-            const origin_config = config.pcbs[pcb_config.mirror.from];
-            pcb_config['outlines'] = pcb_config['outlines'] || origin_config['outlines'] || {};
-            const footprints = u.convertArrayFieldToObject(origin_config, 'footprints') || {};
-            const modules = await getModulesFromPcb(origin_config);
-            const filteredFootprints = u.filterByAsym(footprints);
-            const filteredModules = u.filterByAsym(modules);
+        // with results.errors (the tolerant mode), a pcb that fails is left out and the others go on
+        await u.attempt(results.errors, `pcbs.${pcb_name}`, async () => {
+            let pcb = pcbs[pcb_name] = {};
+            if (pcb_config.mirror) {
+                const origin_config = config.pcbs[pcb_config.mirror.from];
+                pcb_config['outlines'] = pcb_config['outlines'] || origin_config['outlines'] || {};
+                const footprints = u.convertArrayFieldToObject(origin_config, 'footprints') || {};
+                const modules = await getModulesFromPcb(origin_config);
+                const filteredFootprints = u.filterByAsym(footprints);
+                const filteredModules = u.filterByAsym(modules);
 
-            pcb['modules'] = processModules(pcb_name, filteredModules, mirror_points, units);
-            pcb['footprints'] = processFootprints(pcb_name, filteredFootprints, mirror_points, units);
-            for (const [key, value] of Object.entries(mirror_points)) {
-                points[`mirror_${key}`].meta.footprints = value.meta.footprints;
-                points[`mirror_${key}`].meta.column_name= value.meta.column_name;
-                points[`mirror_${key}`].meta.row_name = value.meta.row_name;
+                pcb['modules'] = processModules(pcb_name, filteredModules, mirror_points, units);
+                pcb['footprints'] = processFootprints(pcb_name, filteredFootprints, mirror_points, units);
+                for (const [key, value] of Object.entries(mirror_points)) {
+                    points[`mirror_${key}`].meta.footprints = value.meta.footprints;
+                    points[`mirror_${key}`].meta.column_name= value.meta.column_name;
+                    points[`mirror_${key}`].meta.row_name = value.meta.row_name;
+                }
+
+            } else {
+                const footprints = u.convertArrayFieldToObject(pcb_config, 'footprints') || {};
+                const modules = await getModulesFromPcb(pcb_config);
+                const filteredFootprints = u.filterByAsym(footprints, 'clone');
+                const filteredModules = u.filterByAsym(modules, 'clone');
+
+                pcb['modules'] = processModules(pcb_name, filteredModules, normal_points, units);
+                pcb['footprints'] = processFootprints(pcb_name, filteredFootprints, normal_points, units);
             }
-
-        } else {
-            const footprints = u.convertArrayFieldToObject(pcb_config, 'footprints') || {};
-            const modules = await getModulesFromPcb(pcb_config);
-            const filteredFootprints = u.filterByAsym(footprints, 'clone');
-            const filteredModules = u.filterByAsym(modules, 'clone');
-
-            pcb['modules'] = processModules(pcb_name, filteredModules, normal_points, units);
-            pcb['footprints'] = processFootprints(pcb_name, filteredFootprints, normal_points, units);
-        }
-        pcb['outlines'] = get_outlines_preview(results, pcb_config, pcb_name, points, units);
+            pcb['outlines'] = get_outlines_preview(results, pcb_config, pcb_name, points, units);
+        })
+        if (results.errors && results.errors[`pcbs.${pcb_name}`]) delete pcbs[pcb_name]
     }
 
     return pcbs;

@@ -15,7 +15,10 @@ const stage_configs = require('./stage_configs');
 const github = require('./kicad/github_fetcher');
 const version = require('../package.json').version
 
-const processBasic = async (raw, debug=false, logger=()=>{}) => {
+// With options.tolerant (ergogen-gui's preview), every outline, pcb, case and assembly is made on its own: one that
+// fails is noted in results.errors under its name (e.g. "pcbs.left": the message) and the others are still made.
+// Points stay all or nothing, everything else is made of them. Without it, any failure fails the run, as before.
+const processBasic = async (raw, debug=false, logger=()=>{}, options={}) => {
     const prefix = 'Interpreting format: '
     let empty = true
     let [config, format] = io.interpret(raw, logger)
@@ -32,6 +35,7 @@ const processBasic = async (raw, debug=false, logger=()=>{}) => {
 
     results.canonical = u.deepcopy(config)
     results.config = config;
+    if (options.tolerant) results.errors = {}
 
     if (config.meta && config.meta.engine) {
         logger('Checking compatibility...')
@@ -61,7 +65,7 @@ const processBasic = async (raw, debug=false, logger=()=>{}) => {
     }
 
     logger('Generating outlines...')
-    const outlines = outlines_lib.parse(config.outlines || {}, points, units)
+    const outlines = outlines_lib.parse(config.outlines || {}, points, units, results.errors)
     results.outlines = {}
     for (const [name, outline] of Object.entries(outlines)) {
         if (!debug && name.startsWith('_')) continue
@@ -80,16 +84,16 @@ const processBasic = async (raw, debug=false, logger=()=>{}) => {
 
     if (!debug && empty) {
         logger('Output would be empty, rerunning in debug mode...')
-        return processBasic(raw, true, () => {})
+        return processBasic(raw, true, () => {}, options)
     }
     return results
 }
 
-const process = async (raw, debug=false, logger=()=>{}) => {
-    const results = await processBasic(raw, debug, logger);
+const process = async (raw, debug=false, logger=()=>{}, options={}) => {
+    const results = await processBasic(raw, debug, logger, options);
     
     logger('Preview PCBs...')
-    const previews = await pcbs_preview_lib.parse(results.config, results.pcbs);
+    const previews = await pcbs_preview_lib.parse(results.config, results.pcbs, results.errors);
     for (const [pcb_name, preview] of Object.entries(previews)) {
         console.log("preview: " + pcb_name);
         results.pcbs[pcb_name]['preview'] = { kicad_pcb: preview['kicad_pcb'] };
@@ -134,7 +138,7 @@ const process = async (raw, debug=false, logger=()=>{}) => {
     }
 
     console.log('Modeling cases...')
-    const cases = await cases_lib.parse(results.config, results.config.cases || {}, results.outlines, previews, results.points, results.units)
+    const cases = await cases_lib.parse(results.config, results.config.cases || {}, results.outlines, previews, results.points, results.units, results.errors)
     results.cases = {}
     for (const [case_name, made] of Object.entries(cases)) {
         if (!debug && case_name.startsWith('_')) continue
@@ -145,7 +149,7 @@ const process = async (raw, debug=false, logger=()=>{}) => {
 
     if (results.config.assemblies) {
         logger('Stacking assemblies...')
-        results.assemblies = assemblies_lib.parse(results.config.assemblies, results.cases, results.pcbs, units_lib.parse(results.config))
+        results.assemblies = assemblies_lib.parse(results.config.assemblies, results.cases, results.pcbs, units_lib.parse(results.config), results.errors)
     }
     return results;
 }

@@ -5,6 +5,29 @@ const deepcopy = exports.deepcopy = value => {
     return JSON.parse(JSON.stringify(value))
 }
 
+// One item of a section (an outline, a pcb, a case, an assembly) made on its own. With errors, the collector of the
+// tolerant mode a host can ask for (ergogen-gui's preview), a failure is noted under the item's name and the other
+// items go on; without, it fails the whole run as before.
+const describe = error => (error && error.message) || String(error)
+exports.attempt = async (errors, qname, make) => {
+    if (!errors) return make()
+    try {
+        return await make()
+    } catch (error) {
+        errors[qname] = describe(error)
+        return undefined
+    }
+}
+exports.attemptSync = (errors, qname, make) => {
+    if (!errors) return make()
+    try {
+        return make()
+    } catch (error) {
+        errors[qname] = describe(error)
+        return undefined
+    }
+}
+
 const splitMirrorPoints = exports.splitMirrorPoints = (points)  => {
     const mirror_points = {};
     const normal_points = {};

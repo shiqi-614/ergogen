@@ -172,7 +172,7 @@ const expand_shorthand = (config, name, units) => {
     }
 }
 
-exports.parse = (config_raw, points, units) => {
+exports.parse = (config_raw, points, units, errors) => {
 
     // output outlines will be collected here
     const outlines = {}
@@ -181,93 +181,96 @@ exports.parse = (config_raw, points, units) => {
     // the config must be an actual object so that the exports have names
     config = a.sane(config, 'outlines', 'object')()
     for (let [outline_name, parts] of Object.entries(config)) {
+        // with errors, an outline that fails is left out (outlines made of it then fail too) and the others go on
+        u.attemptSync(errors, `outlines.${outline_name}`, () => {
 
-        // placeholder for the current outline
-        outlines[outline_name] = {models: {}}
+            // placeholder for the current outline
+            outlines[outline_name] = {models: {}}
 
-        // each export can consist of multiple parts
-        // either sub-objects or arrays are fine...
-        if (a.type(parts)() == 'array') {
-            parts = {...parts}
-        }
-        parts = a.sane(parts, `outlines.${outline_name}`, 'object')()
+            // each export can consist of multiple parts
+            // either sub-objects or arrays are fine...
+            if (a.type(parts)() == 'array') {
+                parts = {...parts}
+            }
+            parts = a.sane(parts, `outlines.${outline_name}`, 'object')()
         
-        for (let [part_name, part] of Object.entries(parts)) {
+            for (let [part_name, part] of Object.entries(parts)) {
             
-            const name = `outlines.${outline_name}.${part_name}`
+                const name = `outlines.${outline_name}.${part_name}`
 
-            // string part-shortcuts are expanded first
-            if (a.type(part)() == 'string') {
-                part = o.operation(part, {outline: Object.keys(outlines)})
-            }
+                // string part-shortcuts are expanded first
+                if (a.type(part)() == 'string') {
+                    part = o.operation(part, {outline: Object.keys(outlines)})
+                }
 
-            // process keys that are common to all part declarations
-            const operation = u[a.in(part.operation || 'add', `${name}.operation`, ['add', 'subtract', 'intersect', 'stack'])]
-            const what = a.in(part.what || 'outline', `${name}.what`, ['rectangle', 'circle', 'polygon', 'outline', 'hexagon'])
-            const bound = !!part.bound
-            const asym = a.asym(part.asym || 'source', `${name}.asym`)
+                // process keys that are common to all part declarations
+                const operation = u[a.in(part.operation || 'add', `${name}.operation`, ['add', 'subtract', 'intersect', 'stack'])]
+                const what = a.in(part.what || 'outline', `${name}.what`, ['rectangle', 'circle', 'polygon', 'outline', 'hexagon'])
+                const bound = !!part.bound
+                const asym = a.asym(part.asym || 'source', `${name}.asym`)
 
-            // `where` is delayed until we have all, potentially what-dependent units
-            // default where is [0, 0], as per filter parsing
-            const original_where = part.where // need to save, so the delete's don't get rid of it below
-            const where = units => filter(original_where, `${name}.where`, points, units, asym)
+                // `where` is delayed until we have all, potentially what-dependent units
+                // default where is [0, 0], as per filter parsing
+                const original_where = part.where // need to save, so the delete's don't get rid of it below
+                const where = units => filter(original_where, `${name}.where`, points, units, asym)
             
-            const original_adjust = part.adjust // same as above
-            const fillet = a.sane(part.fillet || 0, `${name}.fillet`, 'number')(units)
-            expand_shorthand(part, `${name}.expand`, units)
-            const expand = a.sane(part.expand || 0, `${name}.expand`, 'number')(units)
-            const joints = a.in(a.sane(part.joints || 0, `${name}.joints`, 'number')(units), `${name}.joints`, [0, 1, 2])
-            const scale = a.sane(part.scale || 1, `${name}.scale`, 'number')(units)
+                const original_adjust = part.adjust // same as above
+                const fillet = a.sane(part.fillet || 0, `${name}.fillet`, 'number')(units)
+                expand_shorthand(part, `${name}.expand`, units)
+                const expand = a.sane(part.expand || 0, `${name}.expand`, 'number')(units)
+                const joints = a.in(a.sane(part.joints || 0, `${name}.joints`, 'number')(units), `${name}.joints`, [0, 1, 2])
+                const scale = a.sane(part.scale || 1, `${name}.scale`, 'number')(units)
 
-            // these keys are then removed, so ops can check their own unexpected keys without interference
-            delete part.operation
-            delete part.what
-            delete part.bound
-            delete part.asym
-            delete part.where
-            delete part.adjust
-            delete part.fillet
-            delete part.expand
-            delete part.joints
-            delete part.scale
+                // these keys are then removed, so ops can check their own unexpected keys without interference
+                delete part.operation
+                delete part.what
+                delete part.bound
+                delete part.asym
+                delete part.where
+                delete part.adjust
+                delete part.fillet
+                delete part.expand
+                delete part.joints
+                delete part.scale
 
-            // a prototype "shape" maker (and its units) are computed
-            const [shape_maker, shape_units] = whats[what](part, name, points, outlines, units)
-            const adjust = start => anchor(original_adjust || {}, `${name}.adjust`, points, start)(shape_units)
+                // a prototype "shape" maker (and its units) are computed
+                const [shape_maker, shape_units] = whats[what](part, name, points, outlines, units)
+                const adjust = start => anchor(original_adjust || {}, `${name}.adjust`, points, start)(shape_units)
 
-            // and then the shape is repeated for all where positions
-            for (const w of where(shape_units)) {
-                const point = adjust(w.clone())
-                // console.log("outline point: " + JSON.stringify(point));
-                let [shape, bbox] = shape_maker(point) // point is passed for mirroring metadata only...
-                if (bound) {
-                    shape = binding(shape, bbox, point, shape_units)
+                // and then the shape is repeated for all where positions
+                for (const w of where(shape_units)) {
+                    const point = adjust(w.clone())
+                    // console.log("outline point: " + JSON.stringify(point));
+                    let [shape, bbox] = shape_maker(point) // point is passed for mirroring metadata only...
+                    if (bound) {
+                        shape = binding(shape, bbox, point, shape_units)
+                    }
+                    shape = point.position(shape) // ...actual positioning happens here
+                    outlines[outline_name] = operation(outlines[outline_name], shape)
                 }
-                shape = point.position(shape) // ...actual positioning happens here
-                outlines[outline_name] = operation(outlines[outline_name], shape)
-            }
 
-            if (scale !== 1) {
-                outlines[outline_name] = m.model.scale(outlines[outline_name], scale)
-            }
+                if (scale !== 1) {
+                    outlines[outline_name] = m.model.scale(outlines[outline_name], scale)
+                }
 
-            if (expand) {
-                outlines[outline_name] = m.model.outline(
-                    outlines[outline_name], Math.abs(expand), joints, (expand < 0), {farPoint: u.farPoint}
-                )
-            }
+                if (expand) {
+                    outlines[outline_name] = m.model.outline(
+                        outlines[outline_name], Math.abs(expand), joints, (expand < 0), {farPoint: u.farPoint}
+                    )
+                }
 
-            if (fillet) {
-                for (const [index, chain] of m.model.findChains(outlines[outline_name]).entries()) {
-                    outlines[outline_name].models[`fillet_${part_name}_${index}`] = m.chain.fillet(chain, fillet)
+                if (fillet) {
+                    for (const [index, chain] of m.model.findChains(outlines[outline_name]).entries()) {
+                        outlines[outline_name].models[`fillet_${part_name}_${index}`] = m.chain.fillet(chain, fillet)
+                    }
                 }
             }
-        }
 
-        // final adjustments
-        m.model.originate(outlines[outline_name])
-        m.model.simplify(outlines[outline_name])
-
+            // final adjustments
+            m.model.originate(outlines[outline_name])
+            m.model.simplify(outlines[outline_name])
+        })
+        if (errors && errors[`outlines.${outline_name}`]) delete outlines[outline_name]
     }
 
     return outlines
@@ -277,11 +280,12 @@ exports.parse = (config_raw, points, units) => {
 // The outlines of the mirrored half. pcbs and cases both need them: compute them once per points object (one
 // ergogen run) instead of once per use. Callers get the shared models, so they copy what they change.
 const mirrored = new WeakMap()
-exports.mirrored = (config_raw, points, units) => {
+exports.mirrored = (config_raw, points, units, errors) => {
     const cached = mirrored.get(points)
     if (cached && cached.config_raw === config_raw && cached.units === units) return cached.outlines
     const { mirror_points } = u.splitMirrorPoints(points)
-    const outlines = exports.parse(config_raw, mirror_points, units)
+    // a failing outline is noted once, by the parse of the source half: here, with errors, it is just left out
+    const outlines = exports.parse(config_raw, mirror_points, units, errors ? {} : undefined)
     mirrored.set(points, { config_raw, units, outlines })
     return outlines
 }

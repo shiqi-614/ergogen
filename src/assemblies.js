@@ -20,6 +20,7 @@
 // and pcb null or {name, z, thickness, shift, top, on}: how it was placed, for a host that moves it and writes the
 // config back. A case part's height is the top of its solid, which cases.js extrudes up from z = 0.
 const a = require('./assert')
+const u = require('./utils')
 
 // the preview board's thickness (kicad/preview_pcb.js)
 const PCB_THICKNESS = 1.6
@@ -93,17 +94,20 @@ const parseParts = (raw, name, pcb, pcbs, units) => a.sane(raw, name, 'array')()
 })
 
 // cases: ergogen's case results ({name: {stl}}), pcbs: its pcb results
-exports.parse = (config, cases, pcbs, units) => {
+exports.parse = (config, cases, pcbs, units, errors) => {
     a.sane(config, 'assemblies', 'object')()
     const results = {}
     for (const [name, assembly] of Object.entries(config)) {
         const qname = `assemblies.${name}`
-        a.sane(assembly, qname, 'object')()
-        a.unexpected(assembly, qname, ['stack', 'pcb', 'parts'])
-        const layers = parseStack(a.sane(assembly.stack || [], `${qname}.stack`, 'array')(), qname, cases, units)
-        const pcb = assembly.pcb === undefined ? null : parsePcb(assembly.pcb, `${qname}.pcb`, layers, pcbs, units)
-        const parts = parseParts(assembly.parts || [], `${qname}.parts`, pcb, pcbs, units)
-        results[name] = {pcb, layers, parts}
+        // with errors (the tolerant mode), an assembly that fails is left out and the others go on
+        u.attemptSync(errors, qname, () => {
+            a.sane(assembly, qname, 'object')()
+            a.unexpected(assembly, qname, ['stack', 'pcb', 'parts'])
+            const layers = parseStack(a.sane(assembly.stack || [], `${qname}.stack`, 'array')(), qname, cases, units)
+            const pcb = assembly.pcb === undefined ? null : parsePcb(assembly.pcb, `${qname}.pcb`, layers, pcbs, units)
+            const parts = parseParts(assembly.parts || [], `${qname}.parts`, pcb, pcbs, units)
+            results[name] = {pcb, layers, parts}
+        })
     }
     return results
 }
