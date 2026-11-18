@@ -127,3 +127,6 @@ temp\b
 **tags
 
 **.idea/
+
+# the before/after summaries depend on the local library clones
+test/golden/snapshots/
