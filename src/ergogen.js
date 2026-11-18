@@ -18,6 +18,8 @@ const version = require('../package.json').version
 // With options.tolerant (ergogen-gui's preview), every outline, pcb, case and assembly is made on its own: one that
 // fails is noted in results.errors under its name (e.g. "pcbs.left": the message) and the others are still made.
 // Points stay all or nothing, everything else is made of them. Without it, any failure fails the run, as before.
+// With options.skip: ['cases'], the cases (the slowest part, solids and STL) and the assemblies made of them are
+// left out, for a host that shows something else for now.
 const processBasic = async (raw, debug=false, logger=()=>{}, options={}) => {
     const prefix = 'Interpreting format: '
     let empty = true
@@ -135,6 +137,11 @@ const process = async (raw, debug=false, logger=()=>{}, options={}) => {
         } catch (error) {
             console.error('There was a problem with the fetch operation:', error);
         }
+    }
+
+    if ((options.skip || []).includes('cases')) {
+        logger('Leaving out the cases and the assemblies, as asked')
+        return results;
     }
 
     console.log('Modeling cases...')
