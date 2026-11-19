@@ -13,8 +13,9 @@
 //       parts:                                  # other 3D models, e.g. a module board on standoffs
 //         - name: e-paper
 //           model: "${ERGOCAI_MODULES}/e-paper/2.13inch/2.13inch.glb"   # a model path, as footprints name them
-//           module: e-paper                     # at that module of the pcb, turned with it
-//           z: 30                               # the height of the model's z = 0
+//           at_module: e-paper                  # where it goes: at that module of the pcb, turned with it
+//                                               # (without it, at the board's origin; `module` is its old name)
+//           z: 30                               # how high: its z = 0 that far above the stack's bottom
 //
 // Each result is {pcb, layers: [{name, z, height}], parts: [{name, model, x, y, r, z}]}, z being a bottom's height,
 // and pcb null or {name, z, thickness, shift, top, on}: how it was placed, for a host that moves it and writes the
@@ -81,13 +82,15 @@ const parsePcb = (raw, name, layers, pcbs, units) => {
 const parseParts = (raw, name, pcb, pcbs, units) => a.sane(raw, name, 'array')().map((part, i) => {
     const qname = `${name}[${i}]`
     a.sane(part, qname, 'object')()
-    a.unexpected(part, qname, ['name', 'model', 'module', 'z'])
+    a.unexpected(part, qname, ['name', 'model', 'at_module', 'module', 'z'])
     const model = a.sane(part.model, `${qname}.model`, 'string')()
+    a.assert(part.at_module === undefined || part.module === undefined, `Field "${qname}" has both at_module and module (its old name)!`)
+    const key = part.module !== undefined ? 'module' : 'at_module'
     let [x, y, r] = [0, 0, 0]
-    if (part.module !== undefined) {
-        a.assert(pcb, `Field "${qname}.module" needs the assembly's pcb!`)
+    if (part[key] !== undefined) {
+        a.assert(pcb, `Field "${qname}.${key}" needs the assembly's pcb!`)
         const modules = pcbs[pcb.name].modules || {}
-        const point = modules[a.in(part.module, `${qname}.module`, Object.keys(modules))].point
+        const point = modules[a.in(part[key], `${qname}.${key}`, Object.keys(modules))].point
         ;[x, y, r] = [point.x, point.y, point.r || 0]
     }
     return {name: part.name || model.split('/').pop(), model, x, y, r, z: a.sane(part.z || 0, `${qname}.z`, 'number')(units)}
