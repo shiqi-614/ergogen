@@ -72,6 +72,8 @@ const fillNameByTemplate = (key, zone, zoneName, col, colName, row, units) => {
 
 const renderZone = (zoneName, zone, zoneAnchor, globalKey, units, totalCnt) => {
     const cols = ensureObject(zone.columns, `points.zones.${zoneName}.columns`);
+    // a zone without columns is one column, as without rows it is one row: a single key
+    if (!Object.keys(cols).length) cols.default = {};
     const zoneRows = ensureObject(zone.rows, `points.zones.${zoneName}.rows`);
     const zoneKey = ensureObject(zone.key, `points.zones.${zoneName}.key`);
 

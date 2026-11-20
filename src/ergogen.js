@@ -44,7 +44,8 @@ const checkEngine = (config, logger) => {
 // "_" one, no pcbs) is made again in debug mode, which shows everything.
 const processBasic = async (raw, debug = false, logger = () => {}, options = {}) => {
     const config = readConfig(raw, logger)
-    const results = {raw: config.raw}
+    // the config's text as given (read from a file or typed), for a host to keep; none when it came as an object
+    const results = config.raw === undefined ? {} : {raw: config.raw}
     delete config.raw
     results.canonical = u.deepcopy(config)
     results.config = config
@@ -80,8 +81,22 @@ const processBasic = async (raw, debug = false, logger = () => {}, options = {})
     const empty = !Object.keys(results.outlines).length && !Object.keys(results.pcbs).length
     if (!debug && empty) {
         logger('Output would be empty, rerunning in debug mode...')
-        return processBasic(raw, true, () => {}, options)
+        const shown = await processBasic(raw, true, () => {}, options)
+        inDebug.add(shown)
+        return shown
     }
+    if (debug) inDebug.add(results)
+    return results
+}
+
+// the results made in debug mode, which show the "_" pcbs too
+const inDebug = new WeakSet()
+
+// The "_" pcbs, like the "_" outlines and cases, are for the others to use (their footprints for the cases' cuts, the
+// assemblies' boards) and left out of what is shown, but in debug mode
+const hidePrivate = results => {
+    if (inDebug.has(results)) return results
+    for (const name of Object.keys(results.pcbs || {})) if (name.startsWith('_')) delete results.pcbs[name]
     return results
 }
 
@@ -122,7 +137,7 @@ const process = async (raw, debug = false, logger = () => {}, options = {}) => {
 
     if ((options.skip || []).includes('cases')) {
         logger('Leaving out the cases and the assemblies, as asked')
-        return results
+        return hidePrivate(results)
     }
 
     logger('Modeling cases...')
@@ -137,7 +152,7 @@ const process = async (raw, debug = false, logger = () => {}, options = {}) => {
         logger('Stacking assemblies...')
         results.assemblies = assemblies_lib.parse(results.config.assemblies, results.cases, results.pcbs, units_lib.parse(results.config), results.errors)
     }
-    return results
+    return hidePrivate(results)
 }
 
 // Upstream ergogen's footprint and template injection (JavaScript footprints). This fork's footprints are KiCad
