@@ -12,8 +12,9 @@ const toTheBack = shape => {
     return shape
 }
 
-// A maker of the footprint's shape: each call a fresh copy, with what bounds it. A mounting hole is bounded by its own
-// shape, so its cut can stay round (cases.js takes its largest circle).
+// A maker of the footprint's shape: each call a fresh copy, with what bounds it. A mounting hole, or a footprint that
+// draws nothing but circles on the layers (a hole drawn on Dwgs.User), is bounded by its own shape, so its cut can
+// stay round (cases.js takes its largest circle).
 exports.parse = async (footprintConfig, filterLayers = null) => {
     const kicadMod = await fetchKicadMod(footprintConfig.what)
     const [paths, models] = kicad_shape_converter.convert(kicadMod.footprint, filterLayers)
@@ -25,7 +26,9 @@ exports.parse = async (footprintConfig, filterLayers = null) => {
         } else {
             shape.layer = 'aqua'
         }
-        if (kicadMod.footprint.name.startsWith('MountingHole')) return [shape, shape]
+        const circles = Object.keys(shape.models).length === 0 && Object.keys(shape.paths).length > 0 &&
+            Object.values(shape.paths).every(path => path.type === 'circle')
+        if (kicadMod.footprint.name.startsWith('MountingHole') || circles) return [shape, shape]
         return [shape, m.measure.modelExtents(shape)]
     }
 }

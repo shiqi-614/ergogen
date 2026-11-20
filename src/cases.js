@@ -58,7 +58,7 @@ const allFootprints = previews => {
 // A part's settings, checked; a string part ("+outline_name") is a shorthand first
 const readPart = (part, qname, outlines, solids, units) => {
     if (a.type(part)() === 'string') part = o.operation(part, {outline: Object.keys(outlines), case: Object.keys(solids)}, ['case', 'outline'])
-    a.unexpected(part, qname, ['what', 'name', 'extrude', 'shift', 'rotate', 'operation', 'expand', 'layers', 'asym'])
+    a.unexpected(part, qname, ['what', 'name', 'extrude', 'shift', 'rotate', 'operation', 'expand', 'layers', 'side', 'asym'])
     return {
         raw: part,
         what: a.in(part.what || 'outline', `${qname}.what`, ['outline', 'case', 'pcb']),
@@ -66,11 +66,14 @@ const readPart = (part, qname, outlines, solids, units) => {
         rotate: a.numarr(part.rotate || [0, 0, 0], `${qname}.rotate`, 3)(units),
         operation: a.in(part.operation || 'add', `${qname}.operation`, ['add', 'subtract', 'intersect']),
         asym: part.asym || 'both',
+        // a pcb part's footprints: those on the board's front (the cuts through the case over the board), the back
+        // (under it: a bottom plate's holes) or both
+        side: a.in(part.side || 'front', `${qname}.side`, ['front', 'back', 'both']),
     }
 }
 
-// The 2D shapes an outline or pcb part extrudes: the outlines its name picks, or the cuts of the front-side
-// footprints it picks (one that draws nothing on the layers is left out)
+// The 2D shapes an outline or pcb part extrudes: the outlines its name picks, or the cuts of the footprints it picks
+// on its side of the board (one that draws nothing on the layers is left out)
 const partShapes = async (part, qname, sources, layers, expand) => {
     const name = a.sane(part.raw.name, `${qname}.name`, 'string')()
     const picked = matching(part.what === 'outline' ? sources.outlines : sources.footprints, name)
@@ -78,7 +81,8 @@ const partShapes = async (part, qname, sources, layers, expand) => {
     const shapes = []
     for (const {key, value} of picked) {
         if (part.what === 'pcb') {
-            if (value.config.side === 'back') continue
+            const side = (value.config.side || 'front').toLowerCase() === 'back' ? 'back' : 'front'
+            if (part.side !== 'both' && part.side !== side) continue
             const [shape, extents] = (await footprint_shape.parse(value.config, layers))()
             if (Object.entries(shape.models).length === 0 && Object.entries(shape.paths).length === 0) continue
             shapes.push({key, outline: new Point(value.point).position(footprintCut(extents, expand))})
