@@ -27,39 +27,15 @@
             "colrow": "left_bottom",
             "name": "matrix_left_bottom",
             "zone": {
-                "columns": {
-                    "left": null,
-                    "middle": {
-                        "rows": {
-                            "top": {}
-                        },
-                        "key": {},
-                        "name": "middle"
-                    },
-                    "right": {
-                        "key": {
-                            "stagger": "u"
-                        },
-                        "rows": {
-                            "bottom": "$unset",
-                            "home": {},
-                            "top": {}
-                        },
-                        "name": "right"
-                    }
-                },
-                "rows": {
-                    "bottom": {},
-                    "home": {}
-                },
                 "name": "matrix"
             },
             "col": {
-                "rows": {},
-                "key": {},
                 "name": "left"
             },
             "row": "bottom",
+            "column_name": "left",
+            "row_name": "bottom",
+            "index": 1,
             "bind": [
                 10,
                 10,
@@ -96,39 +72,15 @@
             "colrow": "left_home",
             "name": "matrix_left_home",
             "zone": {
-                "columns": {
-                    "left": null,
-                    "middle": {
-                        "rows": {
-                            "top": {}
-                        },
-                        "key": {},
-                        "name": "middle"
-                    },
-                    "right": {
-                        "key": {
-                            "stagger": "u"
-                        },
-                        "rows": {
-                            "bottom": "$unset",
-                            "home": {},
-                            "top": {}
-                        },
-                        "name": "right"
-                    }
-                },
-                "rows": {
-                    "bottom": {},
-                    "home": {}
-                },
                 "name": "matrix"
             },
             "col": {
-                "rows": {},
-                "key": {},
                 "name": "left"
             },
             "row": "home",
+            "column_name": "left",
+            "row_name": "home",
+            "index": 2,
             "bind": [
                 0,
                 10,
@@ -165,41 +117,18 @@
             "colrow": "middle_bottom",
             "name": "matrix_middle_bottom",
             "zone": {
-                "columns": {
-                    "left": null,
-                    "middle": {
-                        "rows": {
-                            "top": {}
-                        },
-                        "key": {},
-                        "name": "middle"
-                    },
-                    "right": {
-                        "key": {
-                            "stagger": "u"
-                        },
-                        "rows": {
-                            "bottom": "$unset",
-                            "home": {},
-                            "top": {}
-                        },
-                        "name": "right"
-                    }
-                },
-                "rows": {
-                    "bottom": {},
-                    "home": {}
-                },
                 "name": "matrix"
             },
             "col": {
                 "rows": {
                     "top": {}
                 },
-                "key": {},
                 "name": "middle"
             },
             "row": "bottom",
+            "column_name": "middle",
+            "row_name": "bottom",
+            "index": 3,
             "bind": [
                 10,
                 0,
@@ -236,41 +165,18 @@
             "colrow": "middle_home",
             "name": "matrix_middle_home",
             "zone": {
-                "columns": {
-                    "left": null,
-                    "middle": {
-                        "rows": {
-                            "top": {}
-                        },
-                        "key": {},
-                        "name": "middle"
-                    },
-                    "right": {
-                        "key": {
-                            "stagger": "u"
-                        },
-                        "rows": {
-                            "bottom": "$unset",
-                            "home": {},
-                            "top": {}
-                        },
-                        "name": "right"
-                    }
-                },
-                "rows": {
-                    "bottom": {},
-                    "home": {}
-                },
                 "name": "matrix"
             },
             "col": {
                 "rows": {
                     "top": {}
                 },
-                "key": {},
                 "name": "middle"
             },
             "row": "home",
+            "column_name": "middle",
+            "row_name": "home",
+            "index": 4,
             "bind": [
                 10,
                 10,
@@ -307,41 +213,18 @@
             "colrow": "middle_top",
             "name": "matrix_middle_top",
             "zone": {
-                "columns": {
-                    "left": null,
-                    "middle": {
-                        "rows": {
-                            "top": {}
-                        },
-                        "key": {},
-                        "name": "middle"
-                    },
-                    "right": {
-                        "key": {
-                            "stagger": "u"
-                        },
-                        "rows": {
-                            "bottom": "$unset",
-                            "home": {},
-                            "top": {}
-                        },
-                        "name": "right"
-                    }
-                },
-                "rows": {
-                    "bottom": {},
-                    "home": {}
-                },
                 "name": "matrix"
             },
             "col": {
                 "rows": {
                     "top": {}
                 },
-                "key": {},
                 "name": "middle"
             },
             "row": "top",
+            "column_name": "middle",
+            "row_name": "top",
+            "index": 5,
             "bind": [
                 0,
                 10,
@@ -378,31 +261,6 @@
             "colrow": "right_home",
             "name": "matrix_right_home",
             "zone": {
-                "columns": {
-                    "left": null,
-                    "middle": {
-                        "rows": {
-                            "top": {}
-                        },
-                        "key": {},
-                        "name": "middle"
-                    },
-                    "right": {
-                        "key": {
-                            "stagger": "u"
-                        },
-                        "rows": {
-                            "bottom": "$unset",
-                            "home": {},
-                            "top": {}
-                        },
-                        "name": "right"
-                    }
-                },
-                "rows": {
-                    "bottom": {},
-                    "home": {}
-                },
                 "name": "matrix"
             },
             "col": {
@@ -417,6 +275,9 @@
                 "name": "right"
             },
             "row": "home",
+            "column_name": "right",
+            "row_name": "home",
+            "index": 6,
             "bind": [
                 10,
                 0,
@@ -453,31 +314,6 @@
             "colrow": "right_top",
             "name": "matrix_right_top",
             "zone": {
-                "columns": {
-                    "left": null,
-                    "middle": {
-                        "rows": {
-                            "top": {}
-                        },
-                        "key": {},
-                        "name": "middle"
-                    },
-                    "right": {
-                        "key": {
-                            "stagger": "u"
-                        },
-                        "rows": {
-                            "bottom": "$unset",
-                            "home": {},
-                            "top": {}
-                        },
-                        "name": "right"
-                    }
-                },
-                "rows": {
-                    "bottom": {},
-                    "home": {}
-                },
                 "name": "matrix"
             },
             "col": {
@@ -492,6 +328,9 @@
                 "name": "right"
             },
             "row": "top",
+            "column_name": "right",
+            "row_name": "top",
+            "index": 7,
             "bind": [
                 0,
                 0,

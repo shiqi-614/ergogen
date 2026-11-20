@@ -1,0 +1,62 @@
+[
+    {
+        "part": "0",
+        "what": "case",
+        "name": "_subtract",
+        "operation": "add",
+        "extrude": null,
+        "expand": 0,
+        "shift": [
+            0,
+            0,
+            0
+        ],
+        "rotate": [
+            0,
+            0,
+            0
+        ],
+        "matched": 1,
+        "outline": null
+    },
+    {
+        "part": "1",
+        "what": "case",
+        "name": "_cylinder_two",
+        "operation": "intersect",
+        "extrude": null,
+        "expand": 0,
+        "shift": [
+            0,
+            0,
+            0
+        ],
+        "rotate": [
+            0,
+            0,
+            0
+        ],
+        "matched": 1,
+        "outline": null
+    },
+    {
+        "part": "2",
+        "what": "case",
+        "name": "_flat_square",
+        "operation": "add",
+        "extrude": null,
+        "expand": 0,
+        "shift": [
+            0,
+            0,
+            0
+        ],
+        "rotate": [
+            0,
+            0,
+            0
+        ],
+        "matched": 1,
+        "outline": null
+    }
+]

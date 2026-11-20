@@ -259,7 +259,8 @@ exports.parse = (config_raw, points, units, errors) => {
                 }
 
                 if (fillet) {
-                    for (const [index, chain] of m.model.findChains(outlines[outline_name]).entries()) {
+                    // an empty outline (the mirrored half's, with nothing mirrored) has no chains: makerjs says undefined
+                    for (const [index, chain] of (m.model.findChains(outlines[outline_name]) || []).entries()) {
                         outlines[outline_name].models[`fillet_${part_name}_${index}`] = m.chain.fillet(chain, fillet)
                     }
                 }
@@ -282,9 +283,19 @@ const mirrored = new WeakMap()
 exports.mirrored = (config_raw, points, units, errors) => {
     const cached = mirrored.get(points)
     if (cached && cached.config_raw === config_raw && cached.units === units) return cached.outlines
-    const { mirror_points } = u.splitMirrorPoints(points)
+    const { mirror_points, normal_points } = u.splitMirrorPoints(points)
+    // the mirrored half's points by their own names, and the source half's as its mirror_ ones: what is mirror_X
+    // from the source half is X from this one, so an outline that spans both halves (an aggregate of X and mirror_X)
+    // comes out the same
+    const swapped = {...mirror_points}
+    for (const [name, point] of Object.entries(normal_points)) {
+        if (swapped[`mirror_${name}`] !== undefined) continue
+        const other = point.clone()
+        other.meta = {...other.meta, name: `mirror_${other.meta.name}`}
+        swapped[`mirror_${name}`] = other
+    }
     // a failing outline is noted once, by the parse of the source half: here, with errors, it is just left out
-    const outlines = exports.parse(config_raw, mirror_points, units, errors ? {} : undefined)
+    const outlines = exports.parse(config_raw, swapped, units, errors ? {} : undefined)
     mirrored.set(points, { config_raw, units, outlines })
     return outlines
 }

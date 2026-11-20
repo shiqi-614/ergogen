@@ -27,21 +27,15 @@
             "colrow": "default_default",
             "name": "matrix",
             "zone": {
-                "columns": {
-                    "default": {
-                        "rows": {},
-                        "key": {},
-                        "name": "default"
-                    }
-                },
                 "name": "matrix"
             },
             "col": {
-                "rows": {},
-                "key": {},
                 "name": "default"
             },
             "row": "default",
+            "column_name": "default",
+            "row_name": "default",
+            "index": 1,
             "bind": [
                 0,
                 0,
@@ -78,17 +72,15 @@
             "colrow": "named_default",
             "name": "single_key_column_named",
             "zone": {
-                "columns": {
-                    "named": null
-                },
                 "name": "single_key_column"
             },
             "col": {
-                "rows": {},
-                "key": {},
                 "name": "named"
             },
             "row": "default",
+            "column_name": "named",
+            "row_name": "default",
+            "index": 2,
             "bind": [
                 0,
                 0,

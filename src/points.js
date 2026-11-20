@@ -7,6 +7,10 @@ const anchor_lib = require('./anchor')
 
 // shared helpers
 const ensureObject = (obj, path) => a.sane(obj || {}, path, 'object')();
+// rows by name, each an object: one given with no value ("top:") is a row with nothing of its own, so it survives
+// the merge of the zone's rows with a column's, as a null would not
+const ensureRows = (rows, path) => Object.fromEntries(Object.entries(ensureObject(rows, path))
+    .map(([name, row]) => [name, row === null || row === undefined ? {} : row]));
 const ensureNumber = (val, path, units, defaultValue = 0) =>
     a.sane(val ?? defaultValue, path, 'number')(units);
 const ensureBoolean = (val, path, defaultValue = false) =>
@@ -74,7 +78,7 @@ const renderZone = (zoneName, zone, zoneAnchor, globalKey, units, totalCnt) => {
     const cols = ensureObject(zone.columns, `points.zones.${zoneName}.columns`);
     // a zone without columns is one column, as without rows it is one row: a single key
     if (!Object.keys(cols).length) cols.default = {};
-    const zoneRows = ensureObject(zone.rows, `points.zones.${zoneName}.rows`);
+    const zoneRows = ensureRows(zone.rows, `points.zones.${zoneName}.rows`);
     const zoneKey = ensureObject(zone.key, `points.zones.${zoneName}.key`);
 
     const points = {};
@@ -84,6 +88,7 @@ const renderZone = (zoneName, zone, zoneAnchor, globalKey, units, totalCnt) => {
     let firstCol = true;
     Object.entries(cols).forEach(([colName, col]) => {
         col = ensureObject(col, `points.zones.${zoneName}.columns.${colName}`);
+        if (col.rows !== undefined) col.rows = ensureRows(col.rows, `points.zones.${zoneName}.columns.${colName}.rows`);
         const combinedRows = combineRows(zoneRows, col.rows);
         const keys = Object.keys(combinedRows).map(row => {
             const key = extendKeyMetaByPriority( 
@@ -170,6 +175,48 @@ const perform_mirror = exports._perform_mirror = (point, axis) => {
     return [mirrored_name, mp]
 }
 
+
+// autobind (upstream's, which the 2025 rewrite had left out): a key's bind, where it was not given, reaches
+// `autobind` toward the keys next to it, up and down its column (where the column goes on) and left and right
+// (where the next column has keys at its height), so the outlines bound to the keys close up between them
+const perform_autobind = exports._perform_autobind = (points, units) => {
+    const bounds = {}
+    const col_lists = {}
+    const mirrorzone = p => (p.meta.mirrored ? 'mirror_' : '') + p.meta.zone.name
+
+    // round one: each column's lowest and highest key, and each zone's columns in the order they were made
+    for (const p of Object.values(points)) {
+        const zone = mirrorzone(p)
+        const col = p.meta.col.name
+        if (!bounds[zone]) bounds[zone] = {}
+        if (!bounds[zone][col]) bounds[zone][col] = {min: Infinity, max: -Infinity}
+        if (!col_lists[zone]) col_lists[zone] = []
+        if (!col_lists[zone].includes(col)) col_lists[zone].push(col)
+        bounds[zone][col].min = Math.min(bounds[zone][col].min, p.y)
+        bounds[zone][col].max = Math.max(bounds[zone][col].max, p.y)
+    }
+
+    // round two: the binds left undefined (-1 after number-ification)
+    for (const p of Object.values(points)) {
+        const autobind = a.sane(p.meta.autobind, `${p.meta.name}.autobind`, 'number')(units)
+        if (!autobind) continue
+        const zone = mirrorzone(p)
+        const col = p.meta.col.name
+        const col_list = col_lists[zone]
+        const col_bounds = bounds[zone][col]
+        const bind = p.meta.bind = a.trbl(p.meta.bind, `${p.meta.name}.bind`, -1)(units)
+        // up, down
+        if (bind[0] == -1) bind[0] = p.y < col_bounds.max ? autobind : 0
+        if (bind[2] == -1) bind[2] = p.y > col_bounds.min ? autobind : 0
+        // left, right: where the column next to it has keys at this height
+        const next = offset => {
+            const other = bounds[zone][col_list[col_list.indexOf(col) + offset]]
+            return other && p.y >= other.min && p.y <= other.max ? autobind : 0
+        }
+        if (bind[3] == -1) bind[3] = next(-1)
+        if (bind[1] == -1) bind[1] = next(1)
+    }
+}
 
 exports.parse = (config, units) => {
 
@@ -267,6 +314,7 @@ exports.parse = (config, units) => {
         if (p.meta.skip) continue
         filtered[k] = p
     }
+    perform_autobind(filtered, units)
     // done
     return filtered
 }

@@ -44,8 +44,9 @@ const checkEngine = (config, logger) => {
 // "_" one, no pcbs) is made again in debug mode, which shows everything.
 const processBasic = async (raw, debug = false, logger = () => {}, options = {}) => {
     const config = readConfig(raw, logger)
-    // the config's text as given (read from a file or typed), for a host to keep; none when it came as an object
-    const results = config.raw === undefined ? {} : {raw: config.raw}
+    // the config's text as given: what a host sent along with it (config.raw), or the text itself; none for an object
+    const text = config.raw !== undefined ? config.raw : typeof raw === 'string' ? raw : undefined
+    const results = text === undefined ? {} : {raw: text}
     delete config.raw
     results.canonical = u.deepcopy(config)
     results.config = config
@@ -131,7 +132,7 @@ const process = async (raw, debug = false, logger = () => {}, options = {}) => {
     for (const [name, preview] of Object.entries(previews)) {
         results.pcbs[name].preview = {kicad_pcb: preview.kicad_pcb}
     }
-    results.demo = io.twodee(points_lib.visualize(results.points, results.units), debug)
+    results.demo = io.twodee(points_lib.visualize(results.points, results.units), inDebug.has(results))
 
     if (results.canonical?.is_preview === false) await kicadProjects(results, logger)
 

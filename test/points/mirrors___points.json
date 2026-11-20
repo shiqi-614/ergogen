@@ -27,25 +27,6 @@
             "colrow": "left_bottom",
             "name": "matrix_left_bottom",
             "zone": {
-                "columns": {
-                    "left": {
-                        "rows": {
-                            "bottom": {
-                                "asym": "source"
-                            },
-                            "top": {
-                                "asym": "clone"
-                            }
-                        },
-                        "key": {},
-                        "name": "left"
-                    },
-                    "right": null
-                },
-                "rows": {
-                    "bottom": {},
-                    "top": {}
-                },
                 "name": "matrix"
             },
             "col": {
@@ -57,10 +38,12 @@
                         "asym": "clone"
                     }
                 },
-                "key": {},
                 "name": "left"
             },
             "row": "bottom",
+            "column_name": "left",
+            "row_name": "bottom",
+            "index": 1,
             "mirrored": false,
             "bind": [
                 0,
@@ -98,33 +81,15 @@
             "colrow": "right_bottom",
             "name": "matrix_right_bottom",
             "zone": {
-                "columns": {
-                    "left": {
-                        "rows": {
-                            "bottom": {
-                                "asym": "source"
-                            },
-                            "top": {
-                                "asym": "clone"
-                            }
-                        },
-                        "key": {},
-                        "name": "left"
-                    },
-                    "right": null
-                },
-                "rows": {
-                    "bottom": {},
-                    "top": {}
-                },
                 "name": "matrix"
             },
             "col": {
-                "rows": {},
-                "key": {},
                 "name": "right"
             },
             "row": "bottom",
+            "column_name": "right",
+            "row_name": "bottom",
+            "index": 3,
             "mirrored": false,
             "bind": [
                 10,
@@ -162,33 +127,15 @@
             "colrow": "right_top",
             "name": "matrix_right_top",
             "zone": {
-                "columns": {
-                    "left": {
-                        "rows": {
-                            "bottom": {
-                                "asym": "source"
-                            },
-                            "top": {
-                                "asym": "clone"
-                            }
-                        },
-                        "key": {},
-                        "name": "left"
-                    },
-                    "right": null
-                },
-                "rows": {
-                    "bottom": {},
-                    "top": {}
-                },
                 "name": "matrix"
             },
             "col": {
-                "rows": {},
-                "key": {},
                 "name": "right"
             },
             "row": "top",
+            "column_name": "right",
+            "row_name": "top",
+            "index": 4,
             "mirrored": false,
             "bind": [
                 0,
@@ -226,25 +173,6 @@
             "colrow": "left_bottom",
             "name": "other_left_bottom",
             "zone": {
-                "columns": {
-                    "left": {
-                        "rows": {
-                            "bottom": {
-                                "asym": "source"
-                            },
-                            "top": {
-                                "asym": "clone"
-                            }
-                        },
-                        "key": {},
-                        "name": "left"
-                    },
-                    "right": null
-                },
-                "rows": {
-                    "bottom": {},
-                    "top": {}
-                },
                 "name": "other"
             },
             "col": {
@@ -256,10 +184,12 @@
                         "asym": "clone"
                     }
                 },
-                "key": {},
                 "name": "left"
             },
             "row": "bottom",
+            "column_name": "left",
+            "row_name": "bottom",
+            "index": 5,
             "mirrored": false,
             "bind": [
                 0,
@@ -297,33 +227,15 @@
             "colrow": "right_bottom",
             "name": "other_right_bottom",
             "zone": {
-                "columns": {
-                    "left": {
-                        "rows": {
-                            "bottom": {
-                                "asym": "source"
-                            },
-                            "top": {
-                                "asym": "clone"
-                            }
-                        },
-                        "key": {},
-                        "name": "left"
-                    },
-                    "right": null
-                },
-                "rows": {
-                    "bottom": {},
-                    "top": {}
-                },
                 "name": "other"
             },
             "col": {
-                "rows": {},
-                "key": {},
                 "name": "right"
             },
             "row": "bottom",
+            "column_name": "right",
+            "row_name": "bottom",
+            "index": 7,
             "mirrored": false,
             "bind": [
                 10,
@@ -361,33 +273,15 @@
             "colrow": "right_top",
             "name": "other_right_top",
             "zone": {
-                "columns": {
-                    "left": {
-                        "rows": {
-                            "bottom": {
-                                "asym": "source"
-                            },
-                            "top": {
-                                "asym": "clone"
-                            }
-                        },
-                        "key": {},
-                        "name": "left"
-                    },
-                    "right": null
-                },
-                "rows": {
-                    "bottom": {},
-                    "top": {}
-                },
                 "name": "other"
             },
             "col": {
-                "rows": {},
-                "key": {},
                 "name": "right"
             },
             "row": "top",
+            "column_name": "right",
+            "row_name": "top",
+            "index": 8,
             "mirrored": false,
             "bind": [
                 0,
@@ -425,25 +319,6 @@
             "colrow": "mirror_left_top",
             "name": "mirror_other_left_top",
             "zone": {
-                "columns": {
-                    "left": {
-                        "rows": {
-                            "bottom": {
-                                "asym": "source"
-                            },
-                            "top": {
-                                "asym": "clone"
-                            }
-                        },
-                        "key": {},
-                        "name": "left"
-                    },
-                    "right": null
-                },
-                "rows": {
-                    "bottom": {},
-                    "top": {}
-                },
                 "name": "other"
             },
             "col": {
@@ -455,10 +330,12 @@
                         "asym": "clone"
                     }
                 },
-                "key": {},
                 "name": "left"
             },
             "row": "top",
+            "column_name": "left",
+            "row_name": "top",
+            "index": 6,
             "mirrored": true,
             "bind": [
                 0,
@@ -496,33 +373,15 @@
             "colrow": "mirror_right_bottom",
             "name": "mirror_other_right_bottom",
             "zone": {
-                "columns": {
-                    "left": {
-                        "rows": {
-                            "bottom": {
-                                "asym": "source"
-                            },
-                            "top": {
-                                "asym": "clone"
-                            }
-                        },
-                        "key": {},
-                        "name": "left"
-                    },
-                    "right": null
-                },
-                "rows": {
-                    "bottom": {},
-                    "top": {}
-                },
                 "name": "other"
             },
             "col": {
-                "rows": {},
-                "key": {},
                 "name": "right"
             },
             "row": "bottom",
+            "column_name": "right",
+            "row_name": "bottom",
+            "index": 7,
             "mirrored": true,
             "bind": [
                 10,
@@ -560,33 +419,15 @@
             "colrow": "mirror_right_top",
             "name": "mirror_other_right_top",
             "zone": {
-                "columns": {
-                    "left": {
-                        "rows": {
-                            "bottom": {
-                                "asym": "source"
-                            },
-                            "top": {
-                                "asym": "clone"
-                            }
-                        },
-                        "key": {},
-                        "name": "left"
-                    },
-                    "right": null
-                },
-                "rows": {
-                    "bottom": {},
-                    "top": {}
-                },
                 "name": "other"
             },
             "col": {
-                "rows": {},
-                "key": {},
                 "name": "right"
             },
             "row": "top",
+            "column_name": "right",
+            "row_name": "top",
+            "index": 8,
             "mirrored": true,
             "bind": [
                 0,
@@ -624,25 +465,6 @@
             "colrow": "mirror_left_top",
             "name": "mirror_matrix_left_top",
             "zone": {
-                "columns": {
-                    "left": {
-                        "rows": {
-                            "bottom": {
-                                "asym": "source"
-                            },
-                            "top": {
-                                "asym": "clone"
-                            }
-                        },
-                        "key": {},
-                        "name": "left"
-                    },
-                    "right": null
-                },
-                "rows": {
-                    "bottom": {},
-                    "top": {}
-                },
                 "name": "matrix"
             },
             "col": {
@@ -654,10 +476,12 @@
                         "asym": "clone"
                     }
                 },
-                "key": {},
                 "name": "left"
             },
             "row": "top",
+            "column_name": "left",
+            "row_name": "top",
+            "index": 2,
             "mirrored": true,
             "bind": [
                 0,
@@ -695,33 +519,15 @@
             "colrow": "mirror_right_bottom",
             "name": "mirror_matrix_right_bottom",
             "zone": {
-                "columns": {
-                    "left": {
-                        "rows": {
-                            "bottom": {
-                                "asym": "source"
-                            },
-                            "top": {
-                                "asym": "clone"
-                            }
-                        },
-                        "key": {},
-                        "name": "left"
-                    },
-                    "right": null
-                },
-                "rows": {
-                    "bottom": {},
-                    "top": {}
-                },
                 "name": "matrix"
             },
             "col": {
-                "rows": {},
-                "key": {},
                 "name": "right"
             },
             "row": "bottom",
+            "column_name": "right",
+            "row_name": "bottom",
+            "index": 3,
             "mirrored": true,
             "bind": [
                 10,
@@ -759,33 +565,15 @@
             "colrow": "mirror_right_top",
             "name": "mirror_matrix_right_top",
             "zone": {
-                "columns": {
-                    "left": {
-                        "rows": {
-                            "bottom": {
-                                "asym": "source"
-                            },
-                            "top": {
-                                "asym": "clone"
-                            }
-                        },
-                        "key": {},
-                        "name": "left"
-                    },
-                    "right": null
-                },
-                "rows": {
-                    "bottom": {},
-                    "top": {}
-                },
                 "name": "matrix"
             },
             "col": {
-                "rows": {},
-                "key": {},
                 "name": "right"
             },
             "row": "top",
+            "column_name": "right",
+            "row_name": "top",
+            "index": 4,
             "mirrored": true,
             "bind": [
                 0,

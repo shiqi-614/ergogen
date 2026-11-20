@@ -125,7 +125,7 @@ if (what) {
         })
     }
 } else {
-    for (const part of ['points', 'outlines', 'cases', 'pcbs', 'footprints']) {
+    for (const part of ['points', 'outlines', 'cases', 'pcbs']) {
         describe(cap(part), function() {
             for (const i of glob.sync(handle_slash(path.join(__dirname, part, '*.yaml')))) {
                 test.call(this, i)

@@ -24,19 +24,13 @@ matrix_col_row:
         colrow: col_row
         name: matrix_col_row
         zone:
-            columns:
-                col:
-                    rows: {}
-                    key: {}
-                    name: col
-            rows:
-                row: {}
             name: matrix
         col:
-            rows: {}
-            key: {}
             name: col
         row: row
+        column_name: col
+        row_name: row
+        index: 1
         bind:
             - 0
             - 0

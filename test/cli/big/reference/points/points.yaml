@@ -24,17 +24,13 @@ matrix:
         colrow: default_default
         name: matrix
         zone:
-            columns:
-                default:
-                    rows: {}
-                    key: {}
-                    name: default
             name: matrix
         col:
-            rows: {}
-            key: {}
             name: default
         row: default
+        column_name: default
+        row_name: default
+        index: 1
         bind:
             - 0
             - 0

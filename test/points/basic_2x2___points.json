@@ -27,22 +27,15 @@
             "colrow": "left_bottom",
             "name": "matrix_left_bottom",
             "zone": {
-                "columns": {
-                    "left": null,
-                    "right": null
-                },
-                "rows": {
-                    "bottom": {},
-                    "top": {}
-                },
                 "name": "matrix"
             },
             "col": {
-                "rows": {},
-                "key": {},
                 "name": "left"
             },
             "row": "bottom",
+            "column_name": "left",
+            "row_name": "bottom",
+            "index": 1,
             "bind": [
                 10,
                 10,
@@ -79,22 +72,15 @@
             "colrow": "left_top",
             "name": "matrix_left_top",
             "zone": {
-                "columns": {
-                    "left": null,
-                    "right": null
-                },
-                "rows": {
-                    "bottom": {},
-                    "top": {}
-                },
                 "name": "matrix"
             },
             "col": {
-                "rows": {},
-                "key": {},
                 "name": "left"
             },
             "row": "top",
+            "column_name": "left",
+            "row_name": "top",
+            "index": 2,
             "bind": [
                 0,
                 10,
@@ -131,22 +117,15 @@
             "colrow": "right_bottom",
             "name": "matrix_right_bottom",
             "zone": {
-                "columns": {
-                    "left": null,
-                    "right": null
-                },
-                "rows": {
-                    "bottom": {},
-                    "top": {}
-                },
                 "name": "matrix"
             },
             "col": {
-                "rows": {},
-                "key": {},
                 "name": "right"
             },
             "row": "bottom",
+            "column_name": "right",
+            "row_name": "bottom",
+            "index": 3,
             "bind": [
                 10,
                 0,
@@ -183,22 +162,15 @@
             "colrow": "right_top",
             "name": "matrix_right_top",
             "zone": {
-                "columns": {
-                    "left": null,
-                    "right": null
-                },
-                "rows": {
-                    "bottom": {},
-                    "top": {}
-                },
                 "name": "matrix"
             },
             "col": {
-                "rows": {},
-                "key": {},
                 "name": "right"
             },
             "row": "top",
+            "column_name": "right",
+            "row_name": "top",
+            "index": 4,
             "bind": [
                 0,
                 0,

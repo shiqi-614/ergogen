@@ -148,9 +148,11 @@ const single = (data, rel) => {
 const composite = (data, rel) => {
     if (!data) return
     const abs = path.join(args.o, rel)
-    if (data.yaml) {
+    // the model itself, in debug mode (io.twodee keeps it as raw)
+    const model = data.yaml || (args.debug || data.svg ? data.raw : undefined)
+    if (model) {
         fs.mkdirpSync(path.dirname(abs))
-        fs.writeFileSync(abs + '.yaml', yamldump(data.yaml))
+        fs.writeFileSync(abs + '.yaml', yamldump(model))
     }
     for (const format of ['svg', 'dxf', 'stl']) {
         if (data[format]) {
@@ -185,12 +187,7 @@ for (const [name, _case] of Object.entries(results.cases)) {
     composite(_case, `cases/${name}`)
 }
 
-if (results.pcbs) {
-    for (const [name, pcb] of Object.entries(results.pcbs)) {
-        single(pcb, `pcbs/${name}.kicad_pcb`)
-    }
-}
-
+// a pcb is its parts placed (data, not KiCad text): its KiCad board is the preview's
 if (results.pcbs) {
     for (const [name, pcb] of Object.entries(results.pcbs)) {
         single(pcb.preview && pcb.preview.kicad_pcb, `preview/${name}.kicad_pcb`)

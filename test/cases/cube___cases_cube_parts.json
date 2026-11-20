@@ -1,0 +1,88 @@
+[
+    {
+        "part": "0",
+        "what": "outline",
+        "name": "square",
+        "operation": "add",
+        "extrude": 5,
+        "expand": 0,
+        "shift": [
+            0,
+            0,
+            0
+        ],
+        "rotate": [
+            0,
+            0,
+            0
+        ],
+        "matched": 1,
+        "outline": {
+            "models": {
+                "a": {
+                    "models": {},
+                    "origin": [
+                        0,
+                        0
+                    ]
+                },
+                "b": {
+                    "paths": {
+                        "ShapeLine1": {
+                            "type": "line",
+                            "origin": [
+                                -2.5,
+                                -2.5
+                            ],
+                            "end": [
+                                2.5,
+                                -2.5
+                            ]
+                        },
+                        "ShapeLine2": {
+                            "type": "line",
+                            "origin": [
+                                2.5,
+                                -2.5
+                            ],
+                            "end": [
+                                2.5,
+                                2.5
+                            ]
+                        },
+                        "ShapeLine3": {
+                            "type": "line",
+                            "origin": [
+                                2.5,
+                                2.5
+                            ],
+                            "end": [
+                                -2.5,
+                                2.5
+                            ]
+                        },
+                        "ShapeLine4": {
+                            "type": "line",
+                            "origin": [
+                                -2.5,
+                                2.5
+                            ],
+                            "end": [
+                                -2.5,
+                                -2.5
+                            ]
+                        }
+                    },
+                    "origin": [
+                        0,
+                        0
+                    ]
+                }
+            },
+            "origin": [
+                0,
+                0
+            ]
+        }
+    }
+]
