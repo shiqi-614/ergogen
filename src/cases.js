@@ -1,7 +1,8 @@
 // The cases (config.cases): each a list of parts, every part a solid that is added to, subtracted from or
 // intersected with the parts before it. A part is an outline extruded, the shapes of footprints on the pcbs (their
 // courtyards, or the layers it asks for) extruded, or an earlier case. A case mirrored from another (mirror: from:)
-// is made of that case's parts, on the mirrored outlines. The solids are built with manifold-3d and come out as STL.
+// is made of that case's parts, on the mirrored outlines, each shifted and turned the mirrored way. The solids are
+// built with manifold-3d and come out as STL.
 //
 // Each result is {stl, parts}: the STL, and for every part what it is and the 2D shape it extruded, for a host that
 // shows the parts (ergogen-gui's case editor).
@@ -138,6 +139,12 @@ const buildCase = async (wasm, caseName, caseConfig, mirrored, sources, solids, 
     for (const [partName, raw] of Object.entries(parts)) {
         const qname = `cases.${caseName}.${partName}`
         const part = readPart(raw, qname, sources.outlines, solids, units)
+        // the mirrored half moves and turns the other way: x shifts and turns about y and z change sign
+        if (mirrored) {
+            const neg = v => v === 0 ? 0 : -v
+            part.shift = [neg(part.shift[0]), part.shift[1], part.shift[2]]
+            part.rotate = [part.rotate[0], neg(part.rotate[1]), neg(part.rotate[2])]
+        }
         let solid, partHeight = null
 
         if (part.what === 'outline' || part.what === 'pcb') {
