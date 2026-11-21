@@ -7,6 +7,7 @@
 // The footprint libraries come from local clones, at their committed HEAD, instead of GitHub (no network, no rate
 // limit, and the same files every run): ERGOCAI_LIB and ERGOCAI_MODULES name the clones, ~/Development/ErgoCaiLib and
 // ~/Development/ErgoCai.modules by default. The ErgoCai config is ergogen-gui's example as committed (ERGOGEN_GUI).
+// GOLDEN_STL_DIR=<dir> also writes each config's case STLs there (the last config's win), to look at.
 
 const fs = require('fs')
 const os = require('os')
@@ -110,6 +111,13 @@ const run = async ({text}) => {
     if (!process.env.GOLDEN_VERBOSE) console.error = () => {}
     try {
         const results = await ergogen.process(asTheGuiDoes(text), true, () => {}, {tolerant: true})
+        // GOLDEN_STL_DIR=<dir> writes the cases' STLs there too, to look at
+        if (process.env.GOLDEN_STL_DIR && results.cases) {
+            fs.mkdirSync(process.env.GOLDEN_STL_DIR, {recursive: true})
+            for (const [name, made] of Object.entries(results.cases)) {
+                if (made.stl) fs.writeFileSync(path.join(process.env.GOLDEN_STL_DIR, `${name}.stl`), made.stl)
+            }
+        }
         // what is made, not how it was asked for
         delete results.raw
         delete results.config

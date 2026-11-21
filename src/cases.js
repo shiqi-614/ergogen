@@ -31,6 +31,23 @@ const footprintCut = (extents, expand = 0) => {
     }
 }
 
+// What a footprint cuts with cut: outline: the closed shapes it draws, grown by expand (round at the corners, as an
+// outline's expand is)
+// (makerjs's outline is a band round each edge, both sides of it: of each grown shape the outermost loop is kept, as
+// a closed polygon, so the cut is the whole shape)
+const drawnCut = (shape, expand = 0) => {
+    if (!expand) return shape
+    const grown = m.model.outline(shape, expand, 0, false, {farPoint: u.farPoint})
+    const loops = (m.model.findChains(grown) || []).filter(chain => chain.endless)
+        .map(chain => m.chain.toKeyPoints(chain, 0.2)).map(points => ({points, box: boxOf(points)}))
+    const inside = (a, b) => a !== b && a.box.low[0] >= b.box.low[0] && a.box.low[1] >= b.box.low[1] &&
+        a.box.high[0] <= b.box.high[0] && a.box.high[1] <= b.box.high[1]
+    const outer = loops.filter(loop => !loops.some(other => inside(loop, other)))
+    return {models: Object.fromEntries(outer.map((loop, i) => [`cut${i}`, new m.models.ConnectTheDots(true, loop.points)]))}
+}
+const boxOf = points => ({low: [Math.min(...points.map(p => p[0])), Math.min(...points.map(p => p[1]))],
+                          high: [Math.max(...points.map(p => p[0])), Math.max(...points.map(p => p[1]))]})
+
 // The entries of dict a part's name picks: the one of that name, or every one a /regex/flags matches
 const matching = (dict, pattern) => {
     pattern = pattern.trim()
@@ -59,7 +76,7 @@ const allFootprints = previews => {
 // A part's settings, checked; a string part ("+outline_name") is a shorthand first
 const readPart = (part, qname, outlines, solids, units) => {
     if (a.type(part)() === 'string') part = o.operation(part, {outline: Object.keys(outlines), case: Object.keys(solids)}, ['case', 'outline'])
-    a.unexpected(part, qname, ['what', 'name', 'extrude', 'shift', 'rotate', 'operation', 'expand', 'layers', 'side', 'asym'])
+    a.unexpected(part, qname, ['what', 'name', 'extrude', 'shift', 'rotate', 'operation', 'expand', 'layers', 'side', 'cut', 'asym'])
     return {
         raw: part,
         what: a.in(part.what || 'outline', `${qname}.what`, ['outline', 'case', 'pcb']),
@@ -70,6 +87,9 @@ const readPart = (part, qname, outlines, solids, units) => {
         // a pcb part's footprints: those on the board's front (the cuts through the case over the board), the back
         // (under it: a bottom plate's holes) or both
         side: a.in(part.side || 'front', `${qname}.side`, ['front', 'back', 'both']),
+        // what a pcb part's footprint cuts: the box round what it draws on the layers (a round hole stays round), or
+        // the closed shapes it draws there themselves, for a cut-out that is not a rectangle
+        cut: a.in(part.cut || 'box', `${qname}.cut`, ['box', 'outline']),
     }
 }
 
@@ -86,7 +106,8 @@ const partShapes = async (part, qname, sources, layers, expand) => {
             if (part.side !== 'both' && part.side !== side) continue
             const [shape, extents] = (await footprint_shape.parse(value.config, layers))()
             if (Object.entries(shape.models).length === 0 && Object.entries(shape.paths).length === 0) continue
-            shapes.push({key, outline: new Point(value.point).position(footprintCut(extents, expand))})
+            const cut = part.cut === 'outline' ? drawnCut(shape, expand) : footprintCut(extents, expand)
+            shapes.push({key, outline: new Point(value.point).position(cut)})
         } else {
             // an outline as ergogen makes it, or one that is a model already (the mirrored ones)
             shapes.push({key, outline: value.raw ? value.raw.models.export : value})

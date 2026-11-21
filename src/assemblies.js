@@ -15,6 +15,8 @@
 //           model: "${ERGOCAI_MODULES}/e-paper/2.13inch/2.13inch.glb"   # a model path, as footprints name them
 //           at_module: e-paper                  # where it goes: at that module of the pcb, turned with it
 //                                               # (without it, at the board's origin; `module` is its old name)
+//           rotate: 180                         # turned that much more on its place, e.g. a module that goes
+//                                               # on its mount the other way round
 //           z: 30                               # how high: its z = 0 that far above the stack's bottom
 //
 // Each result is {pcb, layers: [{name, z, height}], parts: [{name, model, x, y, r, z}]}, z being a bottom's height,
@@ -82,7 +84,7 @@ const parsePcb = (raw, name, layers, pcbs, units) => {
 const parseParts = (raw, name, pcb, pcbs, units) => a.sane(raw, name, 'array')().map((part, i) => {
     const qname = `${name}[${i}]`
     a.sane(part, qname, 'object')()
-    a.unexpected(part, qname, ['name', 'model', 'at_module', 'module', 'z'])
+    a.unexpected(part, qname, ['name', 'model', 'at_module', 'module', 'rotate', 'z'])
     const model = a.sane(part.model, `${qname}.model`, 'string')()
     a.assert(part.at_module === undefined || part.module === undefined, `Field "${qname}" has both at_module and module (its old name)!`)
     const key = part.module !== undefined ? 'module' : 'at_module'
@@ -93,6 +95,8 @@ const parseParts = (raw, name, pcb, pcbs, units) => a.sane(raw, name, 'array')()
         const point = modules[a.in(part[key], `${qname}.${key}`, Object.keys(modules))].point
         ;[x, y, r] = [point.x, point.y, point.r || 0]
     }
+    // turned on its place by rotate (degrees, as the module's own turn): a module that goes on its mount the other way round
+    r += a.sane(part.rotate || 0, `${qname}.rotate`, 'number')(units)
     return {name: part.name || model.split('/').pop(), model, x, y, r, z: a.sane(part.z || 0, `${qname}.z`, 'number')(units)}
 })
 

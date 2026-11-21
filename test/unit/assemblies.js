@@ -13,6 +13,10 @@ describe('Assemblies', function() {
         parts({model: 'm.glb'}).a.parts[0].should.include({x: 0, y: 0, r: 0, z: 0})
     })
 
+    it('turns a part on its place by rotate', function() {
+        parts({model: 'm.glb', at_module: 'screen', rotate: 180}).a.parts[0].should.include({x: 10, y: 20, r: 210})
+    })
+
     it('still takes module, its old name, but not both', function() {
         parts({model: 'm.glb', module: 'screen'}).a.parts[0].should.include({x: 10, y: 20})
         ;(() => parts({model: 'm.glb', module: 'screen', at_module: 'screen'})).should.throw('both at_module and module')

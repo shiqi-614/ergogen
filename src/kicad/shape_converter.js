@@ -70,12 +70,17 @@ const converters = {
         rect.origin = [x0, -y1]
         return {[key]: rect}
     },
-    // a polygon: its points joined in order (closed when KiCad repeats the first)
+    // a polygon: its points joined in order, and the last back to the first (KiCad's polygons are closed, and it
+    // does not repeat the first point)
     fp_poly: item => {
         const key = keyOf('fpPoly', item)
         const points = item.pts.xy
         const model = {paths: {}}
         for (let i = 0; i < points.length - 1; i++) model.paths[`line${i + 1}`] = new m.paths.Line(up(points[i]), up(points[i + 1]))
+        const [first, last] = [points[0], points[points.length - 1]]
+        if (points.length > 2 && (first.x !== last.x || first.y !== last.y)) {
+            model.paths[`line${points.length}`] = new m.paths.Line(up(last), up(first))
+        }
         return {[key]: model}
     },
 }
