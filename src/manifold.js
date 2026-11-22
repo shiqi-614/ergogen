@@ -75,6 +75,18 @@ const crossSection = (wasm, model) => {
     return united
 }
 
+// The filled region of a makerjs model grown by `by` (round at the corners), as a makerjs model of closed polygons
+// (a hole in it as one inside another), or null when the model encloses no area
+exports.grow = (wasm, model, by) => {
+    const section = crossSection(wasm, model)
+    if (!section) return null
+    const grown = section.offset(by, 'Round', 2, SEGMENTS)
+    const polygons = grown.toPolygons()
+    section.delete()
+    grown.delete()
+    return {models: Object.fromEntries(polygons.map((points, i) => [`grown${i}`, new m.models.ConnectTheDots(true, points.map(([x, y]) => [x, y]))]))}
+}
+
 // a makerjs model extruded from z = 0 to z = height, or null when it encloses no area
 exports.extrude = (wasm, model, height) => {
     const section = crossSection(wasm, model)

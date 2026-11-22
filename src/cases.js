@@ -33,20 +33,7 @@ const footprintCut = (extents, expand = 0) => {
 
 // What a footprint cuts with cut: outline: the closed shapes it draws, grown by expand (round at the corners, as an
 // outline's expand is)
-// (makerjs's outline is a band round each edge, both sides of it: of each grown shape the outermost loop is kept, as
-// a closed polygon, so the cut is the whole shape)
-const drawnCut = (shape, expand = 0) => {
-    if (!expand) return shape
-    const grown = m.model.outline(shape, expand, 0, false, {farPoint: u.farPoint})
-    const loops = (m.model.findChains(grown) || []).filter(chain => chain.endless)
-        .map(chain => m.chain.toKeyPoints(chain, 0.2)).map(points => ({points, box: boxOf(points)}))
-    const inside = (a, b) => a !== b && a.box.low[0] >= b.box.low[0] && a.box.low[1] >= b.box.low[1] &&
-        a.box.high[0] <= b.box.high[0] && a.box.high[1] <= b.box.high[1]
-    const outer = loops.filter(loop => !loops.some(other => inside(loop, other)))
-    return {models: Object.fromEntries(outer.map((loop, i) => [`cut${i}`, new m.models.ConnectTheDots(true, loop.points)]))}
-}
-const boxOf = points => ({low: [Math.min(...points.map(p => p[0])), Math.min(...points.map(p => p[1]))],
-                          high: [Math.max(...points.map(p => p[0])), Math.max(...points.map(p => p[1]))]})
+const drawnCut = (wasm, shape, expand = 0) => expand ? manifold.grow(wasm, shape, expand) : shape
 
 // The entries of dict a part's name picks: the one of that name, or every one a /regex/flags matches
 const matching = (dict, pattern) => {
@@ -95,7 +82,7 @@ const readPart = (part, qname, outlines, solids, units) => {
 
 // The 2D shapes an outline or pcb part extrudes: the outlines its name picks, or the cuts of the footprints it picks
 // on its side of the board (one that draws nothing on the layers is left out)
-const partShapes = async (part, qname, sources, layers, expand) => {
+const partShapes = async (wasm, part, qname, sources, layers, expand) => {
     const name = a.sane(part.raw.name, `${qname}.name`, 'string')()
     const picked = matching(part.what === 'outline' ? sources.outlines : sources.footprints, name)
     a.assert(picked.length > 0, `Field "${qname}.name" did not match any outline!`)
@@ -106,7 +93,8 @@ const partShapes = async (part, qname, sources, layers, expand) => {
             if (part.side !== 'both' && part.side !== side) continue
             const [shape, extents] = (await footprint_shape.parse(value.config, layers))()
             if (Object.entries(shape.models).length === 0 && Object.entries(shape.paths).length === 0) continue
-            const cut = part.cut === 'outline' ? drawnCut(shape, expand) : footprintCut(extents, expand)
+            const cut = part.cut === 'outline' ? drawnCut(wasm, shape, expand) : footprintCut(extents, expand)
+            if (!cut) continue
             shapes.push({key, outline: new Point(value.point).position(cut)})
         } else {
             // an outline as ergogen makes it, or one that is a model already (the mirrored ones)
@@ -175,7 +163,7 @@ const buildCase = async (wasm, caseName, caseConfig, mirrored, sources, solids, 
             // an outline part is on one half: the source's (asym: source) is left off the mirrored case, the clone's
             // off the case itself
             if (part.what === 'outline' && part.asym === (mirrored ? 'source' : 'clone')) continue
-            const {name, shapes} = await partShapes(part, qname, mirrored ? {...sources, outlines: sources.mirrored} : sources,
+            const {name, shapes} = await partShapes(wasm, part, qname, mirrored ? {...sources, outlines: sources.mirrored} : sources,
                 part.raw.layers || ['F.CrtYd'], expand)
             const pieces = [], extruded = []
             for (const {key, outline} of shapes) {
