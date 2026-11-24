@@ -22,4 +22,17 @@ describe('Assemblies', function() {
         ;(() => parts({model: 'm.glb', module: 'screen', at_module: 'screen'})).should.throw('both at_module and module')
         ;(() => parts({model: 'm.glb', at_module: 'nope'})).should.throw('at_module')
     })
+
+    it('places a part where an anchor says, a point of the layout shifted and turned', function() {
+        const Point = require('../../src/point')
+        const points = {key: new Point(100, 50, 90)}
+        const where = w => assemblies.parse({a: {parts: [{model: 'm.glb', where: w, rotate: 10}]}}, {}, {}, {}, undefined, points).a.parts[0]
+        // shifted in the point's own frame (turned 90°), then the part's rotate on top
+        const placed = where({ref: 'key', shift: [5, 0], rotate: -90})
+        placed.x.should.be.closeTo(100, 1e-9)
+        placed.y.should.be.closeTo(55, 1e-9)
+        placed.r.should.equal(10)
+        ;(() => parts({model: 'm.glb', at_module: 'screen', where: {ref: 'key'}})).should.throw('both where and at_module')
+        ;(() => where({ref: 'nope'})).should.throw('Unknown point reference')
+    })
 })

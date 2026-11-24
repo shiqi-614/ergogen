@@ -14,7 +14,9 @@
 //         - name: e-paper
 //           model: "${ERGOCAI_MODULES}/e-paper/2.13inch/2.13inch.glb"   # a model path, as footprints name them
 //           at_module: e-paper                  # where it goes: at that module of the pcb, turned with it
-//                                               # (without it, at the board's origin; `module` is its old name)
+//                                               # (without it, at the board's origin; `module` is its old name),
+//                                               # or `where:` an anchor, as outlines place shapes: a point of the
+//                                               # layout, shifted and turned (e.g. a case screw, for a part under it)
 //           rotate: 180                         # turned that much more on its place, e.g. a module that goes
 //                                               # on its mount the other way round
 //           z: 30                               # how high: its z = 0 that far above the stack's bottom
@@ -24,6 +26,7 @@
 // config back. A case part's height is the top of its solid, which cases.js extrudes up from z = 0.
 const a = require('./assert')
 const u = require('./utils')
+const anchor = require('./anchor').parse
 
 // the preview board's thickness (kicad/preview_pcb.js)
 const PCB_THICKNESS = 1.6
@@ -81,27 +84,31 @@ const parsePcb = (raw, name, layers, pcbs, units) => {
     return {name: pcb_name, z: z + shift, thickness: PCB_THICKNESS, shift, top: pcb.top || null, on: pcb.on || null}
 }
 
-const parseParts = (raw, name, pcb, pcbs, units) => a.sane(raw, name, 'array')().map((part, i) => {
+const parseParts = (raw, name, pcb, pcbs, points, units) => a.sane(raw, name, 'array')().map((part, i) => {
     const qname = `${name}[${i}]`
     a.sane(part, qname, 'object')()
-    a.unexpected(part, qname, ['name', 'model', 'at_module', 'module', 'rotate', 'z'])
+    a.unexpected(part, qname, ['name', 'model', 'at_module', 'module', 'where', 'rotate', 'z'])
     const model = a.sane(part.model, `${qname}.model`, 'string')()
     a.assert(part.at_module === undefined || part.module === undefined, `Field "${qname}" has both at_module and module (its old name)!`)
     const key = part.module !== undefined ? 'module' : 'at_module'
+    a.assert(part.where === undefined || part[key] === undefined, `Field "${qname}" has both where and ${key}!`)
     let [x, y, r] = [0, 0, 0]
     if (part[key] !== undefined) {
         a.assert(pcb, `Field "${qname}.${key}" needs the assembly's pcb!`)
         const modules = pcbs[pcb.name].modules || {}
         const point = modules[a.in(part[key], `${qname}.${key}`, Object.keys(modules))].point
         ;[x, y, r] = [point.x, point.y, point.r || 0]
+    } else if (part.where !== undefined) {
+        const point = anchor(part.where, `${qname}.where`, points)(units)
+        ;[x, y, r] = [point.x, point.y, point.r]
     }
     // turned on its place by rotate (degrees, as the module's own turn): a module that goes on its mount the other way round
     r += a.sane(part.rotate || 0, `${qname}.rotate`, 'number')(units)
     return {name: part.name || model.split('/').pop(), model, x, y, r, z: a.sane(part.z || 0, `${qname}.z`, 'number')(units)}
 })
 
-// cases: ergogen's case results ({name: {stl}}), pcbs: its pcb results
-exports.parse = (config, cases, pcbs, units, errors) => {
+// cases: ergogen's case results ({name: {stl}}), pcbs: its pcb results, points: the layout's (for where)
+exports.parse = (config, cases, pcbs, units, errors, points = {}) => {
     a.sane(config, 'assemblies', 'object')()
     const results = {}
     for (const [name, assembly] of Object.entries(config)) {
@@ -112,7 +119,7 @@ exports.parse = (config, cases, pcbs, units, errors) => {
             a.unexpected(assembly, qname, ['stack', 'pcb', 'parts'])
             const layers = parseStack(a.sane(assembly.stack || [], `${qname}.stack`, 'array')(), qname, cases, units)
             const pcb = assembly.pcb === undefined ? null : parsePcb(assembly.pcb, `${qname}.pcb`, layers, pcbs, units)
-            const parts = parseParts(assembly.parts || [], `${qname}.parts`, pcb, pcbs, units)
+            const parts = parseParts(assembly.parts || [], `${qname}.parts`, pcb, pcbs, points, units)
             results[name] = {pcb, layers, parts}
         })
     }

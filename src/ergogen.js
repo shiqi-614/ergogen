@@ -151,7 +151,7 @@ const process = async (raw, debug = false, logger = () => {}, options = {}) => {
 
     if (results.config.assemblies) {
         logger('Stacking assemblies...')
-        results.assemblies = assemblies_lib.parse(results.config.assemblies, results.cases, results.pcbs, units_lib.parse(results.config), results.errors)
+        results.assemblies = assemblies_lib.parse(results.config.assemblies, results.cases, results.pcbs, units_lib.parse(results.config), results.errors, results.points)
     }
     return hidePrivate(results)
 }
