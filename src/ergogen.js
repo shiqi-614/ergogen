@@ -101,6 +101,16 @@ const hidePrivate = results => {
     return results
 }
 
+// A pcb's points for kicadgen, which draws the keys' matrix from them: the ones its footprints are placed on. Every
+// unmirrored point went to each unmirrored pcb, and a split whose halves are two zones (RowStaggerSplit) names their
+// rows and columns alike: both halves' keys in one schematic were the same matrix position twice, and kicadgen
+// stopped. A pcb with no footprint on a point gets them all, as before.
+const pcbPoints = (points, pcb) => {
+    const used = new Set(Object.values(pcb?.footprints || {}).map(f => f.point?.meta?.name).filter(Boolean))
+    const own = Object.fromEntries(Object.entries(points).filter(([name]) => used.has(name)))
+    return Object.keys(own).length ? own : points
+}
+
 // The KiCad project of every pcb, from kicadgen (the server's "Generate"): a zip each, base64. A failure is logged
 // and leaves the projects out.
 const kicadProjects = async (results, logger) => {
@@ -110,7 +120,7 @@ const kicadProjects = async (results, logger) => {
         const {mirror_points, normal_points} = u.splitMirrorPoints(results.points)
         for (const [name, pcbConfig] of Object.entries(results.canonical.pcbs)) {
             // a mirrored pcb is placed on the mirrored points
-            const points = pcbConfig.mirror ? mirror_points : normal_points
+            const points = pcbPoints(pcbConfig.mirror ? mirror_points : normal_points, results.pcbs?.[name])
             const response = await axios.post(stage_configs.KICADGEN_API_URL,
                 {points, pcb: {name}, results},
                 {headers: {'Content-Type': 'application/json'}, responseType: 'arraybuffer'})
@@ -168,6 +178,8 @@ module.exports = {
     process,
     processBasic,
     inject,
+    // the points a pcb's KiCad project is drawn from (tools that make the kicadgen payloads themselves)
+    pcbPoints,
     // the GitHub files the footprints come from, for a host that reads more of those repos (3D models)
     github: {
         checkRepo: github.checkRepo,
