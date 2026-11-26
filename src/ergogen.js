@@ -42,7 +42,7 @@ const checkEngine = (config, logger) => {
 
 // The units, points, outlines and pcbs (their parts placed). A run that would show nothing (every outline a hidden
 // "_" one, no pcbs) is made again in debug mode, which shows everything.
-const processBasic = async (raw, debug = false, logger = () => {}, options = {}) => {
+const basic = async (raw, debug = false, logger = () => {}, options = {}) => {
     const config = readConfig(raw, logger)
     // the config's text as given: what a host sent along with it (config.raw), or the text itself; none for an object
     const text = config.raw !== undefined ? config.raw : typeof raw === 'string' ? raw : undefined
@@ -56,7 +56,9 @@ const processBasic = async (raw, debug = false, logger = () => {}, options = {})
 
     logger('Calculating variables...')
     const units = units_lib.parse(config)
-    if (debug) results.units = units
+    // always, until hidePrivate: the cases and the assemblies read them (kept in debug mode only, a run without it
+    // failed on every unit)
+    results.units = units
 
     logger('Parsing points...')
     if (!config.points) throw new Error('Input does not contain a points clause!')
@@ -70,19 +72,18 @@ const processBasic = async (raw, debug = false, logger = () => {}, options = {})
     logger('Generating outlines...')
     const outlines = outlines_lib.parse(config.outlines || {}, points, units, results.errors)
     results.outlines = {}
-    for (const [name, outline] of Object.entries(outlines)) {
-        if (!debug && name.startsWith('_')) continue
-        results.outlines[name] = io.twodee(outline, debug)
-    }
+    // every outline, the "_" ones too: the cases cut by them; hidePrivate leaves those out of what is returned
+    for (const [name, outline] of Object.entries(outlines)) results.outlines[name] = io.twodee(outline, debug)
 
     logger('Scaffolding PCBs...')
     results.pcbs = {...await pcbs_lib.parse(results, points, units)}
     results.points = points
 
-    const empty = !Object.keys(results.outlines).length && !Object.keys(results.pcbs).length
+    const visible = names => Object.keys(names).filter(name => !name.startsWith('_')).length
+    const empty = !visible(results.outlines) && !visible(results.pcbs)
     if (!debug && empty) {
         logger('Output would be empty, rerunning in debug mode...')
-        const shown = await processBasic(raw, true, () => {}, options)
+        const shown = await basic(raw, true, () => {}, options)
         inDebug.add(shown)
         return shown
     }
@@ -97,9 +98,15 @@ const inDebug = new WeakSet()
 // assemblies' boards) and left out of what is shown, but in debug mode
 const hidePrivate = results => {
     if (inDebug.has(results)) return results
-    for (const name of Object.keys(results.pcbs || {})) if (name.startsWith('_')) delete results.pcbs[name]
+    for (const part of ['outlines', 'pcbs', 'cases'])
+        for (const name of Object.keys(results[part] || {})) if (name.startsWith('_')) delete results[part][name]
+    // the units, which every run needs (the cases' and assemblies' expressions), are shown in debug mode only
+    delete results.units
     return results
 }
+
+// what the units, points, outlines and pcbs show, "_" ones left out but in debug mode
+const processBasic = async (...args) => hidePrivate(await basic(...args))
 
 // A pcb's points for kicadgen, which draws the keys' matrix from them: the ones its footprints are placed on. Every
 // unmirrored point went to each unmirrored pcb, and a split whose halves are two zones (RowStaggerSplit) names their
@@ -135,7 +142,7 @@ const kicadProjects = async (results, logger) => {
 // Everything: what processBasic makes, then each pcb's KiCad preview board, the KiCad projects when asked for (a
 // config with is_preview: false), the cases and the assemblies
 const process = async (raw, debug = false, logger = () => {}, options = {}) => {
-    const results = await processBasic(raw, debug, logger, options)
+    const results = await basic(raw, debug, logger, options)
 
     logger('Preview PCBs...')
     const previews = await pcbs_preview_lib.parse(results.config, results.pcbs, results.errors)
@@ -154,10 +161,8 @@ const process = async (raw, debug = false, logger = () => {}, options = {}) => {
     logger('Modeling cases...')
     const cases = await cases_lib.parse(results.config, results.config.cases || {}, results.outlines, previews, results.points, results.units, results.errors)
     results.cases = {}
-    for (const [name, made] of Object.entries(cases)) {
-        if (!debug && name.startsWith('_')) continue
-        results.cases[name] = {stl: made.stl, parts: made.parts}
-    }
+    // the "_" cases too, for the assemblies that stack them; hidePrivate leaves them out of what is returned
+    for (const [name, made] of Object.entries(cases)) results.cases[name] = {stl: made.stl, parts: made.parts}
 
     if (results.config.assemblies) {
         logger('Stacking assemblies...')
