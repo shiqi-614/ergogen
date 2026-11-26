@@ -294,8 +294,10 @@ exports.mirrored = (config_raw, points, units, errors) => {
         other.meta = {...other.meta, name: `mirror_${other.meta.name}`}
         swapped[`mirror_${name}`] = other
     }
-    // a failing outline is noted once, by the parse of the source half: here, with errors, it is just left out
-    const outlines = exports.parse(config_raw, swapped, units, errors ? {} : undefined)
+    // a failing outline is noted once, by the parse of the source half, and here it is just left out: always, as a
+    // config with no mirror has no mirrored points, so an outline that names a point fails here though it is fine
+    // (the CLI, a run without errors to note it in, stopped on it)
+    const outlines = exports.parse(config_raw, swapped, units, {})
     mirrored.set(points, { config_raw, units, outlines })
     return outlines
 }
