@@ -4,7 +4,7 @@
 //
 //   assemblies:
 //     right:
-//       stack: [right_buttom, right_gap, ...]   # an entry can also be {name, gap, z}: space below the part, or
+//       stack: [right_bottom, right_gap, ...]   # an entry can also be {name, gap, z}: space below the part, or
 //                                               # the height of its bottom (the parts above stack on from there)
 //       pcb:                                    # or just its name, to lie at z = 0
 //         name: ergo_cai_right
